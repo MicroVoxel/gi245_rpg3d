@@ -34,6 +34,8 @@ public class CameraController : MonoBehaviour
         MoveByKB();
         Zoom();
         MoveByMouse();
+        transform.position = Clamp(corner1.position, corner2.position);
+
     }
 
     private void MoveByKB()
@@ -44,7 +46,6 @@ public class CameraController : MonoBehaviour
         Vector3 dir = (transform.forward * zInput) + (transform.right * xInput);
 
         transform.position += dir * moveSpeed * Time.deltaTime;
-        transform.position = Clamp(corner1.position, corner2.position);
     }
 
     private Vector3 Clamp(Vector3 lowerLeft, Vector3 topRight)
@@ -70,14 +71,19 @@ public class CameraController : MonoBehaviour
 
     private void MoveByMouse()
     {
-        if (Input.mousePosition.x >= Screen.width)
+        float edgeTolerance = 10f;
+
+        // Horizontal Movement
+        if (Input.mousePosition.x >= Screen.width - edgeTolerance)
             transform.Translate(Vector3.right * moveSpeed * Time.deltaTime, Space.World);
-        if (Input.mousePosition.x <= Screen.width)
+        else if (Input.mousePosition.x <= edgeTolerance)
             transform.Translate(Vector3.left * moveSpeed * Time.deltaTime, Space.World);
-        if (Input.mousePosition.y >= Screen.height)
-            transform.Translate(Vector3.up * moveSpeed * Time.deltaTime, Space.World);
-        if (Input.mousePosition.y <= Screen.height)
-            transform.Translate(Vector3.down * moveSpeed * Time.deltaTime, Space.World);
+
+        // Vertical Movement
+        if (Input.mousePosition.y >= Screen.height - edgeTolerance)
+            transform.Translate(Vector3.forward * moveSpeed * Time.deltaTime, Space.World);
+        else if (Input.mousePosition.y <= edgeTolerance)
+            transform.Translate(Vector3.back * moveSpeed * Time.deltaTime, Space.World);
     }
 
 }
