@@ -21,6 +21,10 @@ public abstract class Character : MonoBehaviour
     protected CharState state;
     public CharState State { get { return state; } }
 
+    [SerializeField]
+    protected GameObject ringSelection;
+    public GameObject RingSelection { get { return ringSelection; } }
+
     private void Awake()
     {
         navAgent = GetComponent<NavMeshAgent>();
@@ -30,6 +34,38 @@ public abstract class Character : MonoBehaviour
     public void SetState(CharState s)
     {
         state = s;
+
+        if (state == CharState.Idle)
+        {
+            navAgent.isStopped = true;
+            navAgent.ResetPath();
+        }
+    }
+
+    public void WalkToPosition(Vector3 des)
+    {
+        if (navAgent != null)
+        {
+            navAgent.SetDestination(des);
+            navAgent.isStopped = false;
+        }
+        SetState(CharState.Walk);
+    }
+
+    protected void WalkUpdate()
+    {
+        float distance = Vector3.Distance(transform.position, navAgent.destination);
+        Debug.Log(distance);
+
+        if(distance <= navAgent.stoppingDistance)
+        {
+            SetState(CharState.Idle);
+        }
+    }
+
+    public void ToggleringSelection(bool flag)
+    {
+        ringSelection.SetActive(flag);
     }
 
 }

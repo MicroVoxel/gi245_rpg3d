@@ -33,7 +33,7 @@ public class CameraController : MonoBehaviour
     {
         MoveByKB();
         Zoom();
-        MoveByMouse();
+        //MoveByMouse();
         transform.position = Clamp(corner1.position, corner2.position);
 
     }
