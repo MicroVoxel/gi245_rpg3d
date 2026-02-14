@@ -83,7 +83,7 @@ public abstract class Character : MonoBehaviour
         }
     }
 
-    public void ToggleringSelection(bool flag)
+    public void ToggleRingSelection(bool flag)
     {
         ringSelection.SetActive(flag);
     }

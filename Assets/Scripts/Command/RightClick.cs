@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class RightClick : MonoBehaviour
@@ -7,14 +8,7 @@ public class RightClick : MonoBehaviour
     private Camera cam;
     public LayerMask layerMask;
 
-    private LeftClick leftClick;
-
     public RectTransform renderTextureUI;
-
-    private void Awake()
-    {
-        leftClick = GetComponent<LeftClick>();
-    }
 
     void Start()
     {
@@ -31,13 +25,18 @@ public class RightClick : MonoBehaviour
         }
     }
 
-    private void CommandToWalk(RaycastHit hit, Character c)
+    private void CommandToWalk(RaycastHit hit, List<Character> heroes)
     {
-        if (c != null)
+        foreach (Character h in heroes)
         {
-            c.WalkToPosition(hit.point);
-            CreateVFX(hit.point, VFXManager.instance.DoubleRingMarker);
+            if (h != null)
+            {
+                h.WalkToPosition(hit.point);
+            }
         }
+
+        CreateVFX(hit.point, VFXManager.instance.DoubleRingMarker);
+
     }
 
     private void TryCommand(Vector2 screenPos)
@@ -59,10 +58,10 @@ public class RightClick : MonoBehaviour
                 switch (hit.collider.tag)
                 {
                     case "Ground":
-                        CommandToWalk(hit, leftClick.CurChar);
+                        CommandToWalk(hit, PartyManager.instance.SelectChars);
                         break;
                     case "Enemy":
-                        CommandToAttack(hit, leftClick.CurChar);
+                        CommandToAttack(hit, PartyManager.instance.SelectChars);
                         break;
                 }
             }
@@ -76,15 +75,15 @@ public class RightClick : MonoBehaviour
         Instantiate(vfxPrefab, pos + new Vector3(0f, 0.1f, 0f), Quaternion.identity);
     }
 
-    private void CommandToAttack(RaycastHit hit, Character c)
+    private void CommandToAttack(RaycastHit hit, List<Character> heroes)
     {
-        if (c == null) return;
-
         Character target = hit.collider.GetComponent<Character>();
         Debug.Log("Attack: " + target);
 
-        if (target != null)
-            c.ToAttackCharacter(target);
+        foreach (Character h in heroes)
+        {
+            h.ToAttackCharacter(target);
+        }
     }
 
 }
