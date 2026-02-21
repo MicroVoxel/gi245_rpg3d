@@ -9,9 +9,6 @@ public class LeftClick : MonoBehaviour
 
     private Camera cam;
 
-    //[SerializeField] private Character curChar;
-    //public Character CurChar { get { return curChar; } }
-
     [SerializeField] private LayerMask layerMask;
 
     [SerializeField] private RectTransform boxSelection;
@@ -57,35 +54,21 @@ public class LeftClick : MonoBehaviour
 
     private void SelectCharacter(RaycastHit hit)
     {
-        /*
-        curChar = hit.collider.GetComponent<Character>();
-        Debug.Log("Selected Char: " + hit.collider.gameObject);
-
-        if (curChar != null)
-        {
-            curChar.ToggleringSelection(true);
-        }
-        */
-
         Character hero = hit.collider.GetComponent<Character>();
         Debug.Log("Selected Char: " + hit.collider.gameObject);
 
         PartyManager.instance.SelectChars.Add(hero);
         hero.ToggleRingSelection(true);
+        UIManager.instance.ShowMagicToggles();
 
     }
 
     private void TrySelect(Vector2 screenPos)
     {
-        //Ray ray = cam.ScreenPointToRay(screenPos);
-        //RaycastHit hit;
-
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(renderTextureUI, screenPos, null, out Vector2 localPoint))
         {
-            // 2. แปลงเป็นพิกัด Normalized (0 ถึง 1)
             Vector2 normalizedPoint = Rect.PointToNormalized(renderTextureUI.rect, localPoint);
 
-            // 3. สร้าง Ray จากกล้องของ RenderTexture โดยใช้พิกัด Viewport (Normalized)
             Ray ray = cam.ViewportPointToRay(normalizedPoint);
             RaycastHit hit;
 
@@ -106,12 +89,6 @@ public class LeftClick : MonoBehaviour
 
     private void ClearRingSelection()
     {
-        /*
-        if (curChar != null)
-        {
-            curChar.ToggleringSelection(false);
-        }
-        */
         foreach (Character h in PartyManager.instance.SelectChars)
         {
             h.ToggleRingSelection(false);
@@ -122,8 +99,6 @@ public class LeftClick : MonoBehaviour
     {
         ClearRingSelection();
         PartyManager.instance.SelectChars.Clear();
-
-        //curChar = null;
     }
 
     private void UpdateSeletionBox(Vector2 mousePos)
