@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class VFXManager : MonoBehaviour
 {
@@ -38,7 +38,7 @@ public class VFXManager : MonoBehaviour
         if (MagicVFX[id] == null) { return; }
 
         GameObject objShoot = Instantiate(MagicVFX[id], posA, Quaternion.identity);
-        objShoot.transform.position = Vector3.LerpUnclamped(posA, posB, time);
+        objShoot.transform.position = Vector3.Lerp(posA, posB, time);
         Destroy(objShoot, time);
     }
 

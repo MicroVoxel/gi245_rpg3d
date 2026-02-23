@@ -1,8 +1,9 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
+#region Enums
 public enum CharState
 {
     Idle,
@@ -14,21 +15,21 @@ public enum CharState
     Hit,
     Die
 }
+#endregion
 
 public abstract class Character : MonoBehaviour
 {
-    #region Var
+    #region Fields & Properties
     protected NavMeshAgent navAgent;
+    protected Collider _collider;
 
     protected Animator anim;
     public Animator Anim { get { return anim; } }
 
-    [SerializeField]
-    protected CharState state;
+    [SerializeField] protected CharState state;
     public CharState State { get { return state; } }
 
-    [SerializeField]
-    protected GameObject ringSelection;
+    [SerializeField] protected GameObject ringSelection;
     public GameObject RingSelection { get { return ringSelection; } }
 
     [SerializeField] protected int curHp = 10;
@@ -41,7 +42,6 @@ public abstract class Character : MonoBehaviour
     public float AttackRange { get { return attackRange; } }
 
     [SerializeField] protected int attackDamage = 3;
-
 
     [SerializeField] protected float attackCooldown = 2f;
     [SerializeField] protected float attackTimer = 0f;
@@ -60,15 +60,18 @@ public abstract class Character : MonoBehaviour
 
     protected VFXManager vfxManager;
     protected UIManager uiManager;
-
     #endregion
 
+    #region Unity Callbacks
     private void Awake()
     {
         navAgent = GetComponent<NavMeshAgent>();
         anim = GetComponent<Animator>();
+        _collider = GetComponent<Collider>();
     }
+    #endregion
 
+    #region Init & State
     public void charInit(VFXManager vfxM, UIManager uiM)
     {
         vfxManager = vfxM;
@@ -85,7 +88,9 @@ public abstract class Character : MonoBehaviour
             navAgent.ResetPath();
         }
     }
+    #endregion
 
+    #region Movement
     public void WalkToPosition(Vector3 des)
     {
         if (navAgent != null)
@@ -99,7 +104,6 @@ public abstract class Character : MonoBehaviour
     protected void WalkUpdate()
     {
         float distance = Vector3.Distance(transform.position, navAgent.destination);
-        //Debug.Log(distance);
 
         if (distance <= navAgent.stoppingDistance)
         {
@@ -111,7 +115,9 @@ public abstract class Character : MonoBehaviour
     {
         ringSelection.SetActive(flag);
     }
+    #endregion
 
+    #region Normal Attack
     public void ToAttackCharacter(Character target)
     {
         if (curHp <= 0 || state == CharState.Die) return;
@@ -121,7 +127,7 @@ public abstract class Character : MonoBehaviour
         navAgent.SetDestination(target.transform.position);
         navAgent.isStopped = false;
 
-        if (isMagicMode)
+        if (isMagicMode && state != CharState.MagicCast)
         {
             SetState(CharState.WalkToMagicCast);
         }
@@ -148,7 +154,6 @@ public abstract class Character : MonoBehaviour
             SetState(CharState.Attack);
             Attack();
         }
-
     }
 
     protected void Attack()
@@ -168,6 +173,7 @@ public abstract class Character : MonoBehaviour
             SetState(CharState.Idle);
             return;
         }
+
         navAgent.isStopped = true;
 
         attackTimer += Time.deltaTime;
@@ -185,10 +191,20 @@ public abstract class Character : MonoBehaviour
             navAgent.SetDestination(curCharTarget.transform.position);
             navAgent.isStopped = false;
         }
-
-
     }
 
+    protected void AttackLogic()
+    {
+        Character target = curCharTarget.GetComponent<Character>();
+
+        if (target != null)
+        {
+            target.ReceiveDamage(attackDamage);
+        }
+    }
+    #endregion
+
+    #region Hit & Die
     protected virtual IEnumerator DestroyObject()
     {
         yield return new WaitForSeconds(5f);
@@ -216,16 +232,6 @@ public abstract class Character : MonoBehaviour
         }
     }
 
-    protected void AttackLogic()
-    {
-        Character target = curCharTarget.GetComponent<Character>();
-
-        if (target != null)
-        {
-            target.ReceiveDamage(attackDamage);
-        }
-    }
-
     public bool IsMyEnemy(string targetTag)
     {
         string myTag = gameObject.tag;
@@ -237,9 +243,10 @@ public abstract class Character : MonoBehaviour
             return true;
 
         return false;
-
     }
+    #endregion
 
+    #region Magic
     protected void MagicCastLogic(Magic magic)
     {
         Character target = curCharTarget.GetComponent<Character>();
@@ -252,26 +259,47 @@ public abstract class Character : MonoBehaviour
 
     private IEnumerator ShootMagicCast(Magic curMagicCast)
     {
-        if (vfxManager != null)
+        if (curCharTarget == null || vfxManager == null)
+            yield break;
+
+        if (curCharTarget.CurHp <= 0)
         {
-            vfxManager.ShootMagic(
-                curMagicCast.ShootId,
-                transform.position + new Vector3(0,1f,0),
-                curCharTarget.transform.position,
-                curMagicCast.ShootTime
-                );
+            SetState(CharState.Idle);
+            yield break;
+        }
+
+        Vector3 spawnPosition = transform.position + Vector3.up;
+        Vector3 targetPosition = GetTargetCenter(curCharTarget);
+
+        vfxManager.ShootMagic(
+            curMagicCast.ShootId,
+            spawnPosition,
+            targetPosition,
+            curMagicCast.ShootTime
+        );
+        Debug.DrawLine(spawnPosition, targetPosition, Color.red, 2f);
+
+        isMagicMode = false;
+        SetState(CharState.Idle);
+
+        if (uiManager != null)
+        {
+            uiManager.IsOnCurToggleMagic(false);
         }
 
         yield return new WaitForSeconds(curMagicCast.ShootTime);
 
         MagicCastLogic(curMagicCast);
-        isMagicMode = false;
+    }
 
-        SetState(CharState.Idle);
-        if (uiManager != null)
+    private Vector3 GetTargetCenter(Character target)
+    {
+        if (target.TryGetComponent<Collider>(out var col))
         {
-            uiManager.IsOnCurToggleMagic(false);
+            return col.bounds.center + Vector3.up * (col.bounds.extents.y * 0.5f);
         }
+
+        return target.transform.position + Vector3.up;
     }
 
     private IEnumerator LoadMagicCast(Magic curMagicCast)
@@ -282,7 +310,7 @@ public abstract class Character : MonoBehaviour
                 CurMagicCast.LoadID,
                 transform.position + new Vector3(0, 1f, 0),
                 curMagicCast.LoadTime
-                );
+            );
         }
 
         yield return new WaitForSeconds(curMagicCast.LoadTime);
@@ -318,5 +346,5 @@ public abstract class Character : MonoBehaviour
             MagicCast(curMagicCast);
         }
     }
-
+    #endregion
 }

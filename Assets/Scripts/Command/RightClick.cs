@@ -41,15 +41,10 @@ public class RightClick : MonoBehaviour
 
     private void TryCommand(Vector2 screenPos)
     {
-        //Ray ray = cam.ScreenPointToRay(screenPos);
-        //RaycastHit hit;
-
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(renderTextureUI, screenPos, null, out Vector2 localPoint))
         {
-            // 2. แปลงเป็นพิกัด Normalized (0 ถึง 1)
             Vector2 normalizedPoint = Rect.PointToNormalized(renderTextureUI.rect, localPoint);
 
-            // 3. สร้าง Ray จากกล้องของ RenderTexture โดยใช้พิกัด Viewport (Normalized)
             Ray ray = cam.ViewportPointToRay(normalizedPoint);
             RaycastHit hit;
 

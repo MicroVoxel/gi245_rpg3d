@@ -99,6 +99,7 @@ public class LeftClick : MonoBehaviour
     {
         ClearRingSelection();
         PartyManager.instance.SelectChars.Clear();
+        UIManager.instance.ResetMagicToggles();
     }
 
     private void UpdateSeletionBox(Vector2 mousePos)

@@ -1,18 +1,21 @@
+﻿using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 public class UIManager : MonoBehaviour
 {
     [SerializeField] private RectTransform selectionBox;
-    public RectTransform SelectionBox { get { return selectionBox; } }
+    public RectTransform SelectionBox => selectionBox;
 
     [SerializeField] private Toggle togglePauseUnpause;
-
     [SerializeField] private Toggle[] toggleMagic;
-    public Toggle[] ToggleMagic { get { return toggleMagic; } }
+    public Toggle[] ToggleMagic => toggleMagic;
 
     [SerializeField] private int curToggleMagicID = -1;
+
+    private bool _isInternalUpdating = false;
 
     public static UIManager instance;
 
@@ -21,26 +24,39 @@ public class UIManager : MonoBehaviour
         instance = this;
     }
 
-    void Start()
+    private void Start()
     {
-        
+        ResetMagicToggles();
     }
 
-    void Update()
+    private void Update()
+    {
+        HandleKeyboardInput();
+    }
+
+    private void HandleKeyboardInput()
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
             togglePauseUnpause.isOn = !togglePauseUnpause.isOn;
-        }   
+        }
+
+        int skillCount = toggleMagic.Count();
+
+        for (int i = 0; i < skillCount; i++)
+        {
+            if (Input.GetKeyDown(KeyCode.Alpha1 + i))
+            {
+                SelectMagicSkill(i);
+            }
+        }
     }
 
     public void ToggleAI(bool isOn)
     {
         foreach (Character member in PartyManager.instance.Members)
         {
-            AttackAI ai = member.gameObject.GetComponent<AttackAI>();
-
-            if (ai!= null)
+            if (member.TryGetComponent<AttackAI>(out var ai))
             {
                 ai.enabled = isOn;
             }
@@ -50,7 +66,6 @@ public class UIManager : MonoBehaviour
     public void SelectAll()
     {
         PartyManager.instance.SelectChars.Clear();
-
         foreach (Character member in PartyManager.instance.Members)
         {
             if (member.CurHp > 0)
@@ -68,27 +83,80 @@ public class UIManager : MonoBehaviour
 
     public void ShowMagicToggles()
     {
-        if (PartyManager.instance.SelectChars.Count <= 0) { return; }
+        if (PartyManager.instance.SelectChars.Count <= 0) return;
 
         Character hero = PartyManager.instance.SelectChars[0];
+        _isInternalUpdating = true;
 
-        for (int i = 0; i < hero.MagicSkills.Count; i++)
+        for (int i = 0; i < toggleMagic.Length; i++)
         {
-            toggleMagic[i].interactable = true;
-            toggleMagic[i].isOn = false;
-            toggleMagic[i].GetComponentInChildren<TextMeshProUGUI>().text = hero.MagicSkills[i].Name;
+            if (i < hero.MagicSkills.Count)
+            {
+                toggleMagic[i].interactable = true;
+                toggleMagic[i].SetIsOnWithoutNotify(false);
+                toggleMagic[i].GetComponentInChildren<TextMeshProUGUI>().text = hero.MagicSkills[i].Name;
+            }
+            else
+            {
+                toggleMagic[i].interactable = false;
+                toggleMagic[i].GetComponentInChildren<TextMeshProUGUI>().text = "---";
+            }
+        }
+
+        _isInternalUpdating = false;
+    }
+
+    public void ResetMagicToggles()
+    {
+        _isInternalUpdating = true;
+        foreach (var toggle in toggleMagic)
+        {
+            toggle.SetIsOnWithoutNotify(false);
+            toggle.interactable = false;
+            var text = toggle.GetComponentInChildren<TextMeshProUGUI>();
+            if (text != null) text.text = "---";
+        }
+        _isInternalUpdating = false;
+    }
+
+    /// <summary>
+    /// ฟังก์ชันสำหรับ UI Toggle (OnValueChanged)
+    /// </summary>
+    public void OnMagicToggleSelected(int index)
+    {
+        if (_isInternalUpdating) return;
+
+        if (toggleMagic[index].isOn)
+        {
+            SelectMagicSkill(index);
         }
     }
 
     public void SelectMagicSkill(int i)
     {
+        if (i < 0 || i >= toggleMagic.Length || _isInternalUpdating) { return; }
+        if (i >= PartyManager.instance.SelectChars[0].MagicSkills.Count) { return; }
+
+        _isInternalUpdating = true;
+
         curToggleMagicID = i;
         PartyManager.instance.HeroSelectMagicSkill(i);
+
+        for (int j = 0; j < toggleMagic.Length; j++)
+        {
+            toggleMagic[j].isOn = (j == i);
+        }
+
+        _isInternalUpdating = false;
     }
 
     public void IsOnCurToggleMagic(bool flag)
     {
-        toggleMagic[curToggleMagicID].isOn = flag;
+        if (curToggleMagicID >= 0 && curToggleMagicID < toggleMagic.Length)
+        {
+            _isInternalUpdating = true;
+            toggleMagic[curToggleMagicID].isOn = flag;
+            _isInternalUpdating = false;
+        }
     }
-
 }
