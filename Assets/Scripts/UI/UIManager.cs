@@ -15,6 +15,14 @@ public class UIManager : MonoBehaviour
 
     [SerializeField] private int curToggleMagicID = -1;
 
+    [SerializeField] private GameObject blackImage;
+
+    [SerializeField] protected GameObject inventoryPanel;
+
+    [SerializeField] private GameObject itemUIPrefab;
+
+    [SerializeField] private GameObject[] slots;
+
     private bool _isInternalUpdating = false;
 
     public static UIManager instance;
@@ -95,11 +103,13 @@ public class UIManager : MonoBehaviour
                 toggleMagic[i].interactable = true;
                 toggleMagic[i].SetIsOnWithoutNotify(false);
                 toggleMagic[i].GetComponentInChildren<TextMeshProUGUI>().text = hero.MagicSkills[i].Name;
+                toggleMagic[i].targetGraphic.GetComponent<Image>().sprite = hero.MagicSkills[i].Icon;
             }
             else
             {
                 toggleMagic[i].interactable = false;
-                toggleMagic[i].GetComponentInChildren<TextMeshProUGUI>().text = "---";
+                toggleMagic[i].GetComponentInChildren<TextMeshProUGUI>().text = " ";
+                toggleMagic[i].targetGraphic.GetComponent<Image>().sprite = null;
             }
         }
 
@@ -113,15 +123,16 @@ public class UIManager : MonoBehaviour
         {
             toggle.SetIsOnWithoutNotify(false);
             toggle.interactable = false;
+
             var text = toggle.GetComponentInChildren<TextMeshProUGUI>();
-            if (text != null) text.text = "---";
+            if (text != null) text.text = " ";
+
+            var image = toggle.targetGraphic.GetComponent<Image>();
+            if (image != null) image.sprite = null;
         }
         _isInternalUpdating = false;
     }
 
-    /// <summary>
-    /// ฟังก์ชันสำหรับ UI Toggle (OnValueChanged)
-    /// </summary>
     public void OnMagicToggleSelected(int index)
     {
         if (_isInternalUpdating) return;
@@ -159,4 +170,50 @@ public class UIManager : MonoBehaviour
             _isInternalUpdating = false;
         }
     }
+
+    public void ToggleInventoryPanel()
+    {
+        if (!inventoryPanel.activeInHierarchy)
+        {
+            inventoryPanel.SetActive(true);
+            blackImage.SetActive(true);
+            ShowInventory();
+        }
+        else
+        {
+            inventoryPanel.SetActive(false);
+            blackImage.SetActive(false);
+            ClearInventory();
+        }
+    }
+
+    public void ClearInventory()
+    {
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i].transform.childCount > 2)
+            {
+                Transform child = slots[i].transform.GetChild(2);
+                Destroy(child.gameObject);
+            }
+        }
+    }
+
+    public void ShowInventory()
+    {
+        if (PartyManager.instance.SelectChars.Count <= 0) return;
+
+        Character hero = PartyManager.instance.SelectChars[0];
+
+        for (int i = 0; i < hero.InventoryItems.Length; i++)
+        {
+            if (hero.InventoryItems[i] != null)
+            {
+                GameObject itemObj = Instantiate(itemUIPrefab, slots[i].transform);
+                itemObj.GetComponent<Image>().sprite = hero.InventoryItems[i].Icon;
+            }
+        }
+
+    }
+
 }

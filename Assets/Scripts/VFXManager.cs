@@ -8,6 +8,9 @@ public class VFXManager : MonoBehaviour
     [SerializeField] private GameObject[] magicVFX;
     public GameObject[] MagicVFX { get { return magicVFX; } }
 
+    [SerializeField] private MagicData[] magicDatas;
+    public MagicData[] MagicDatas { get { return magicDatas; } }
+
     public static VFXManager instance;
 
     private void Awake()

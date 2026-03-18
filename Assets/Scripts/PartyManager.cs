@@ -28,9 +28,21 @@ public class PartyManager : MonoBehaviour
 
         for (int i = 0; i < members.Count; i++)
         {
-            members[i].MagicSkills.Add(new Magic(0, "Fire", 10f, 100, 3f, 1.5f, 0, 1));
-            members[i].MagicSkills.Add(new Magic(1, "Glow", 10f, 150, 3f, 1.5f, 0, 2));
-            members[i].MagicSkills.Add(new Magic(2, "Ice", 10f, 150, 3f, 1.5f, 0, 3));
+            members[i].MagicSkills.Add(new Magic(VFXManager.instance.MagicDatas[0]));
+            members[i].MagicSkills.Add(new Magic(VFXManager.instance.MagicDatas[1]));
+            members[i].MagicSkills.Add(new Magic(VFXManager.instance.MagicDatas[2]));
+
+            InventoryManager.instance.AddItem(members[i], 0);
+            InventoryManager.instance.AddItem(members[i], 1);
+            InventoryManager.instance.AddItem(members[i], 2);
+            InventoryManager.instance.AddItem(members[i], 3);
+            InventoryManager.instance.AddItem(members[i], 4);
+            InventoryManager.instance.AddItem(members[i], 5);
+            InventoryManager.instance.AddItem(members[i], 6);
+            InventoryManager.instance.AddItem(members[i], 7);
+            InventoryManager.instance.AddItem(members[i], 8);
+            InventoryManager.instance.AddItem(members[i], 9);
+
         }
 
         UIManager.instance.ShowMagicToggles();
