@@ -35,6 +35,7 @@ public class UIManager : MonoBehaviour
     private void Start()
     {
         ResetMagicToggles();
+        InitSlots();
     }
 
     private void Update()
@@ -191,10 +192,10 @@ public class UIManager : MonoBehaviour
     {
         for (int i = 0; i < slots.Length; i++)
         {
-            if (slots[i].transform.childCount > 2)
+            ItemDrag itemInSlot = slots[i].GetComponentInChildren<ItemDrag>();
+            if (itemInSlot != null)
             {
-                Transform child = slots[i].transform.GetChild(2);
-                Destroy(child.gameObject);
+                Destroy(itemInSlot.transform.gameObject);
             }
         }
     }
@@ -205,15 +206,28 @@ public class UIManager : MonoBehaviour
 
         Character hero = PartyManager.instance.SelectChars[0];
 
-        for (int i = 0; i < hero.InventoryItems.Length; i++)
+        for (int i = 0; i < InventoryManager.MAXSLOT; i++)
         {
             if (hero.InventoryItems[i] != null)
             {
                 GameObject itemObj = Instantiate(itemUIPrefab, slots[i].transform);
-                itemObj.GetComponent<Image>().sprite = hero.InventoryItems[i].Icon;
+                ItemDrag itemDrag = itemObj.GetComponent<ItemDrag>();
+
+                itemDrag.Item = hero.InventoryItems[i];
+                itemDrag.IconParent = slots[i].transform;
+                itemDrag.Image.sprite = hero.InventoryItems[i].Icon;
+
             }
         }
 
+    }
+
+    private void InitSlots()
+    {
+        for (int i = 0; i < InventoryManager.MAXSLOT; i++)
+        {
+            slots[i].GetComponent<InventorySlot>().ID = i;
+        }
     }
 
 }

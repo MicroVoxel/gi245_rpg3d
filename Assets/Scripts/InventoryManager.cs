@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using UnityEngine;
+using UnityEngine.VFX;
 
 public class InventoryManager : MonoBehaviour
 {
@@ -15,6 +16,12 @@ public class InventoryManager : MonoBehaviour
 
     void Awake()
     {
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         instance = this;
     }
 
@@ -34,4 +41,50 @@ public class InventoryManager : MonoBehaviour
         return false;
     }
 
+    public void SaveItemInBag(int index, Item item)
+    {
+        if (PartyManager.instance.SelectChars.Count == 0) return;
+
+        PartyManager.instance.SelectChars[0].InventoryItems[index] = item;
+    }
+
+    public void RemoveItemInBag(int index)
+    {
+        if (PartyManager.instance.SelectChars.Count == 0) return;
+
+        PartyManager.instance.SelectChars[0].InventoryItems[index] = null;
+    }
+
+    private void SpawnDropItem(Item item, Vector3 pos)
+    {
+        int id;
+
+        switch (item.Type)
+        {
+            case ItemType.Consumable:
+                id = 1;
+                break;
+            default:
+                id = 0;
+                break;
+        }
+
+        GameObject itemObj = Instantiate(ItemPrefabs[id],pos , Quaternion.identity);
+        itemObj.AddComponent<ItemPick>();
+
+        ItemPick itemPick = itemObj.GetComponent<ItemPick>();
+        itemPick.Init(item, instance, PartyManager.instance);
+
+    }
+
+    public void SpawnDropInventory(Item[] items, Vector3 pos)
+    {
+        for (int i = 0; i < items.Length; i++)
+        {
+            if (items[i] != null)
+            {
+                SpawnDropItem(items[i], pos);
+            }
+        }
+    }
 }

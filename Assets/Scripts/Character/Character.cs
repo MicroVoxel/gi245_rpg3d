@@ -71,6 +71,7 @@ public abstract class Character : MonoBehaviour
 
     protected VFXManager vfxManager;
     protected UIManager uiManager;
+    protected InventoryManager invManager;
     #endregion
 
     #region Unity Callbacks
@@ -83,12 +84,13 @@ public abstract class Character : MonoBehaviour
     #endregion
 
     #region Init & State
-    public void charInit(VFXManager vfxM, UIManager uiM)
+    public void charInit(VFXManager vfxM, UIManager uiM, InventoryManager invM)
     {
         vfxManager = vfxM;
         uiManager = uiM;
+        invManager = invM;
 
-        inventoryItems = new Item[16];
+        inventoryItems = new Item[InventoryManager.MAXSLOT];
     }
 
     public void SetState(CharState s)
@@ -230,6 +232,9 @@ public abstract class Character : MonoBehaviour
         SetState(CharState.Die);
 
         anim.SetTrigger("Die");
+
+        invManager.SpawnDropInventory(inventoryItems, transform.position);
+
         StartCoroutine(DestroyObject());
     }
 
