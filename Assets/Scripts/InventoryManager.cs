@@ -1,6 +1,4 @@
-using System.Security.Cryptography;
 using UnityEngine;
-using UnityEngine.VFX;
 
 public class InventoryManager : MonoBehaviour
 {
@@ -69,21 +67,51 @@ public class InventoryManager : MonoBehaviour
                 break;
         }
 
-        GameObject itemObj = Instantiate(ItemPrefabs[id],pos , Quaternion.identity);
-        itemObj.AddComponent<ItemPick>();
+        LayerMask groundLayer = LayerMask.GetMask("Ground");
+        RaycastHit hit;
+        Vector3 rayStart = pos + Vector3.up * 5f;
+        if (Physics.Raycast(rayStart, Vector3.down, out hit, 20f, groundLayer))
+        {
+            pos = hit.point;
+        }
+
+        GameObject itemObj = Instantiate(ItemPrefabs[id], pos, Quaternion.identity);
+
+        Collider col = itemObj.GetComponentInChildren<Collider>();
+        if (col != null)
+        {
+            Vector3 adjustedPos = itemObj.transform.position;
+            adjustedPos.y += col.bounds.extents.y;
+            itemObj.transform.position = adjustedPos;
+        }
 
         ItemPick itemPick = itemObj.GetComponent<ItemPick>();
+        if (itemPick == null)
+            itemPick = itemObj.AddComponent<ItemPick>();
+
         itemPick.Init(item, instance, PartyManager.instance);
 
     }
 
     public void SpawnDropInventory(Item[] items, Vector3 pos)
     {
+        float minRadius = 0.3f;
+        float maxRadius = 0.8f;
+
         for (int i = 0; i < items.Length; i++)
         {
             if (items[i] != null)
             {
-                SpawnDropItem(items[i], pos);
+                float angle = Random.Range(0f, Mathf.PI * 2);
+                float radius = Random.Range(minRadius, maxRadius);
+
+                Vector3 offset = new Vector3(
+                    Mathf.Cos(angle) * radius,
+                    0,
+                    Mathf.Sin(angle) * radius
+                );
+
+                SpawnDropItem(items[i], pos + offset);
             }
         }
     }
