@@ -13,68 +13,112 @@ public enum CharState
     WalkToMagicCast,
     MagicCast,
     Hit,
-    Die
+    Die,
+    WalkToNPC
 }
 #endregion
 
 public abstract class Character : MonoBehaviour
 {
-    #region Fields & Properties
+    #region === COMPONENTS ===
     protected NavMeshAgent navAgent;
     protected Collider _collider;
-
     protected Animator anim;
+
     public Animator Anim { get { return anim; } }
+    #endregion
 
+    #region === BASIC INFO ===
+    [Header("Character Info")]
+    [SerializeField] protected string charName;
+    [SerializeField] protected Sprite avatarPic;
+
+    public string CharName { get { return charName; } }
+    public Sprite AvartarPic { get { return avatarPic; } }
+    #endregion
+
+    #region === STATE ===
+    [Header("State")]
     [SerializeField] protected CharState state;
-    public CharState State { get { return state; } }
-
     [SerializeField] protected GameObject ringSelection;
+
+    public CharState State { get { return state; } }
     public GameObject RingSelection { get { return ringSelection; } }
+    #endregion
 
+    #region === STATS ===
+    [Header("Stats")]
     [SerializeField] protected int curHp = 10;
-    public int CurHp { get { return curHp; } }
+    [SerializeField] protected int maxHP = 100;
 
+    public int CurHp { get { return curHp; } set { curHp = value; } }
+    public int MaxHP { get { return maxHP; } }
+    #endregion
+
+    #region === TARGETING ===
+    [Header("Targeting")]
     [SerializeField] protected Character curCharTarget;
+    [SerializeField] protected float findingRange = 20f;
+
     public Character CurCharTarget { get { return curCharTarget; } set { curCharTarget = value; } }
+    public float FindingRange { get { return findingRange; } }
+    #endregion
 
+    #region === COMBAT (NORMAL) ===
+    [Header("Combat")]
     [SerializeField] protected float attackRange = 2f;
-    public float AttackRange { get { return attackRange; } }
-
     [SerializeField] protected int attackDamage = 3;
-
     [SerializeField] protected float attackCooldown = 2f;
     [SerializeField] protected float attackTimer = 0f;
 
-    [SerializeField] protected float findingRange = 20f;
-    public float FindingRange { get { return findingRange; } }
+    public float AttackRange { get { return attackRange; } }
+    public int AttackDamage { get { return attackDamage; } set { attackDamage = value; } }
+    #endregion
 
+    #region === MAGIC ===
+    [Header("Magic")]
     [SerializeField] protected List<Magic> magicSkills = new List<Magic>();
-    public List<Magic> MagicSkills { get { return magicSkills; } set { magicSkills = value; } }
-
     [SerializeField] protected Magic curMagicCast = null;
-    public Magic CurMagicCast { get { return curMagicCast; } set { curMagicCast = value; } }
-
     [SerializeField] protected bool isMagicMode = false;
+
+    public List<Magic> MagicSkills { get { return magicSkills; } set { magicSkills = value; } }
+    public Magic CurMagicCast { get { return curMagicCast; } set { curMagicCast = value; } }
     public bool IsMagicMode { get { return isMagicMode; } set { isMagicMode = value; } }
+    #endregion
 
+    #region === INVENTORY ===
     [Header("Inventory")]
-
     [SerializeField] protected Item[] inventoryItems;
+
     public Item[] InventoryItems { get { return inventoryItems; } set { inventoryItems = value; } }
+    #endregion
+
+    #region === EQUIPMENT ===
+    [Header("Equipment")]
 
     [SerializeField] protected Item mainWeapon;
-    public Item MainWeapon { get { return mainWeapon; } set { mainWeapon = value; } }
+    [SerializeField] protected Transform weaponHand;
+    [SerializeField] protected GameObject weaponObj;
+    [SerializeField] protected int attackPower = 0;
 
     [SerializeField] protected Item shield;
-    public Item Shield { get { return shield; } set { shield = value; } }
+    [SerializeField] protected Transform shieldHand;
+    [SerializeField] protected GameObject shieldObj;
+    [SerializeField] protected int defensePower = 0;
 
+    public Item MainWeapon { get { return mainWeapon; } set { mainWeapon = value; } }
+    public Item Shield { get { return shield; } set { shield = value; } }
+    public int DefensePower { get { return defensePower; } set { defensePower = value; } }
+    #endregion
+
+    #region === MANAGERS ===
     protected VFXManager vfxManager;
     protected UIManager uiManager;
     protected InventoryManager invManager;
+    protected PartyManager partyManager;
     #endregion
 
-    #region Unity Callbacks
+    #region === UNITY CALLBACKS ===
     private void Awake()
     {
         navAgent = GetComponent<NavMeshAgent>();
@@ -83,12 +127,13 @@ public abstract class Character : MonoBehaviour
     }
     #endregion
 
-    #region Init & State
-    public void charInit(VFXManager vfxM, UIManager uiM, InventoryManager invM)
+    #region === INIT & STATE ===
+    public void CharInit(VFXManager vfxM, UIManager uiM, InventoryManager invM, PartyManager partyM)
     {
         vfxManager = vfxM;
         uiManager = uiM;
         invManager = invM;
+        partyManager = partyM;
 
         inventoryItems = new Item[InventoryManager.MAXSLOT];
     }
@@ -105,7 +150,7 @@ public abstract class Character : MonoBehaviour
     }
     #endregion
 
-    #region Movement
+    #region === MOVEMENT ===
     public void WalkToPosition(Vector3 des)
     {
         if (navAgent != null)
@@ -132,7 +177,7 @@ public abstract class Character : MonoBehaviour
     }
     #endregion
 
-    #region Normal Attack
+    #region === COMBAT LOGIC ===
     public void ToAttackCharacter(Character target)
     {
         if (curHp <= 0 || state == CharState.Die) return;
@@ -212,14 +257,16 @@ public abstract class Character : MonoBehaviour
     {
         Character target = curCharTarget.GetComponent<Character>();
 
+        int totalAtkDmg = attackDamage + attackPower;
+
         if (target != null)
         {
-            target.ReceiveDamage(attackDamage);
+            target.ReceiveDamage(totalAtkDmg);
         }
     }
     #endregion
 
-    #region Hit & Die
+    #region === DAMAGE & LIFE ===
     protected virtual IEnumerator DestroyObject()
     {
         yield return new WaitForSeconds(5f);
@@ -242,12 +289,26 @@ public abstract class Character : MonoBehaviour
     {
         if (curHp <= 0 || state == CharState.Die) return;
 
+        int damageAfter = dmg - defensePower;
+
+        if (damageAfter < 0)
+        {
+            damageAfter = 0;
+        }
+
         curHp -= dmg;
+
         if (curHp <= 0)
         {
             curHp = 0;
             Die();
         }
+    }
+
+    public void Recover(int n)
+    {
+        curHp += n;
+        if (curHp > maxHP) { curHp = maxHP; }
     }
 
     public bool IsMyEnemy(string targetTag)
@@ -264,7 +325,7 @@ public abstract class Character : MonoBehaviour
     }
     #endregion
 
-    #region Magic
+    #region === MAGIC LOGIC ===
     protected void MagicCastLogic(Magic magic)
     {
         Character target = curCharTarget.GetComponent<Character>();
@@ -295,6 +356,7 @@ public abstract class Character : MonoBehaviour
             targetPosition,
             curMagicCast.ShootTime
         );
+
         Debug.DrawLine(spawnPosition, targetPosition, Color.red, 2f);
 
         isMagicMode = false;
@@ -308,16 +370,6 @@ public abstract class Character : MonoBehaviour
         yield return new WaitForSeconds(curMagicCast.ShootTime);
 
         MagicCastLogic(curMagicCast);
-    }
-
-    private Vector3 GetTargetCenter(Character target)
-    {
-        if (target.TryGetComponent<Collider>(out var col))
-        {
-            return col.bounds.center + Vector3.up * (col.bounds.extents.y * 0.5f);
-        }
-
-        return target.transform.position + Vector3.up;
     }
 
     private IEnumerator LoadMagicCast(Magic curMagicCast)
@@ -363,6 +415,74 @@ public abstract class Character : MonoBehaviour
 
             MagicCast(curMagicCast);
         }
+    }
+
+    private Vector3 GetTargetCenter(Character target)
+    {
+        if (target.TryGetComponent<Collider>(out var col))
+        {
+            return col.bounds.center + Vector3.up * (col.bounds.extents.y * 0.5f);
+        }
+
+        return target.transform.position + Vector3.up;
+    }
+    #endregion
+
+    #region === EQUIPMENT LOGIC ===
+    public void EquipWeapon(Item item)
+    {
+        weaponObj = Instantiate(invManager.ItemPrefabs[item.PrefabID], weaponHand);
+
+        weaponObj.transform.localPosition = new Vector3(6f, 2f, 0f);
+        weaponObj.transform.Rotate(0f, 90f, 270f, Space.Self);
+
+        attackPower += item.Power;
+        mainWeapon = item;
+    }
+
+    public void UnEquipWeapon()
+    {
+        if (mainWeapon != null)
+        {
+            defensePower -= mainWeapon.Power;
+            mainWeapon = null;
+            Destroy(weaponObj);
+        }
+    }
+
+    public void EquipShield(Item item)
+    {
+        shieldObj = Instantiate(invManager.ItemPrefabs[item.PrefabID], shieldHand);
+
+        shieldObj.transform.localPosition = new Vector3(-8.5f, -4f, -3f);
+        shieldObj.transform.Rotate(-90f, 0f, 180f, Space.Self);
+
+        defensePower += item.Power;
+        shield = item;
+    }
+
+    public void UnEquipShield()
+    {
+        if (shield != null)
+        {
+            defensePower -= shield.Power;
+            shield = null;
+            Destroy(shieldObj);
+        }
+    }
+    #endregion
+
+    #region === NPC INTERACTION ===
+    public void ToTalkToNPC(Character npc)
+    {
+        if (curHp <= 0 || state == CharState.Die) return;
+
+        curCharTarget = npc;
+
+        navAgent.SetDestination(npc.transform.position);
+        navAgent.isStopped = false;
+
+        SetState(CharState.WalkToNPC);
     }
     #endregion
 }

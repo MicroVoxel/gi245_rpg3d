@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class LeftClick : MonoBehaviour
 {
@@ -40,8 +41,8 @@ public class LeftClick : MonoBehaviour
 
         if (Input.GetMouseButton(0))
         {
-            if (EventSystem.current.IsPointerOverGameObject())
-                return;
+            //if (EventSystem.current.IsPointerOverGameObject())
+            //    return;
             UpdateSeletionBox(Input.mousePosition);
         }
 
@@ -52,14 +53,16 @@ public class LeftClick : MonoBehaviour
         }
     }
 
-    private void SelectCharacter(RaycastHit hit)
+    private int SelectCharacter(RaycastHit hit)
     {
+        ClearEverything();
         Character hero = hit.collider.GetComponent<Character>();
-        Debug.Log("Selected Char: " + hit.collider.gameObject);
+        //Debug.Log("Selected Char: " + hit.collider.gameObject);
 
-        PartyManager.instance.SelectChars.Add(hero);
-        hero.ToggleRingSelection(true);
+        int i = PartyManager.instance.FindIndexFromClass(hero);
+        UIManager.instance.ToggleAvatar[i].isOn = true;
         UIManager.instance.ShowMagicToggles();
+        return i;
 
     }
 
@@ -72,15 +75,22 @@ public class LeftClick : MonoBehaviour
             Ray ray = cam.ViewportPointToRay(normalizedPoint);
             RaycastHit hit;
 
+            int i = 0;
+
             if (Physics.Raycast(ray, out hit, 1000, layerMask))
             {
                 switch (hit.collider.tag)
                 {
                     case "Player":
                     case "Hero":
-                        SelectCharacter(hit);
+                        i = SelectCharacter(hit);
                         break;
                 }
+            }
+
+            if(PartyManager.instance.SelectChars.Count == 0)
+            {
+                UIManager.instance.ToggleAvatar[i].isOn = true;
             }
 
         }
@@ -97,6 +107,11 @@ public class LeftClick : MonoBehaviour
 
     private void ClearEverything()
     {
+        foreach (Toggle t in UIManager.instance.ToggleAvatar)
+        {
+            t.isOn = false;
+        }
+
         ClearRingSelection();
         PartyManager.instance.SelectChars.Clear();
         UIManager.instance.ResetMagicToggles();
@@ -140,8 +155,8 @@ public class LeftClick : MonoBehaviour
             if ((unitPos.x > corner1.x && unitPos.x < corner2.x)
                 && (unitPos.y > corner1.y && unitPos.y < corner2.y))
             {
-                PartyManager.instance.SelectChars.Add(member);
-                member.ToggleRingSelection(true);
+                int i = PartyManager.instance.FindIndexFromClass(member);
+                UIManager.instance.ToggleAvatar[i].isOn = true;
             }
         }
 

@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class InventoryManager : MonoBehaviour
 {
@@ -8,7 +9,7 @@ public class InventoryManager : MonoBehaviour
     [SerializeField] private ItemData[] itemData;
     public ItemData[] ItemData { get { return itemData; } set { itemData = value; } }
 
-    public const int MAXSLOT = 16;
+    public const int MAXSLOT = 18;
 
     public static InventoryManager instance;
 
@@ -21,6 +22,13 @@ public class InventoryManager : MonoBehaviour
         }
 
         instance = this;
+    }
+
+    private void Start()
+    {
+        AddItemShopToNpc(1, 0);
+        AddItemShopToNpc(1, 2);
+        AddItemShopToNpc(1, 5);
     }
 
     public bool AddItem(Character character, int id)
@@ -44,6 +52,17 @@ public class InventoryManager : MonoBehaviour
         if (PartyManager.instance.SelectChars.Count == 0) return;
 
         PartyManager.instance.SelectChars[0].InventoryItems[index] = item;
+
+        switch (index)
+        {
+            case 16:
+                PartyManager.instance.SelectChars[0].EquipShield(item); 
+                break;
+            case 17:
+                PartyManager.instance.SelectChars[0].EquipWeapon(item); 
+                break;    
+        }
+
     }
 
     public void RemoveItemInBag(int index)
@@ -51,6 +70,16 @@ public class InventoryManager : MonoBehaviour
         if (PartyManager.instance.SelectChars.Count == 0) return;
 
         PartyManager.instance.SelectChars[0].InventoryItems[index] = null;
+
+        switch (index)
+        {
+            case 16:
+                PartyManager.instance.SelectChars[0].UnEquipShield();
+                break;
+            case 17:
+                PartyManager.instance.SelectChars[0].UnEquipWeapon();
+                break;
+        }
     }
 
     private void SpawnDropItem(Item item, Vector3 pos)
@@ -115,4 +144,66 @@ public class InventoryManager : MonoBehaviour
             }
         }
     }
+
+    public void DrinkConsumableItem(Item item, int slotID)
+    {
+        string s = string.Format("Drink: {0}", item.ItemName);
+        Debug.Log(s);
+
+        if(PartyManager.instance.SelectChars.Count > 0)
+        {
+            PartyManager.instance.SelectChars[0].Recover(item.Power);
+            RemoveItemInBag(slotID);
+        }
+
+    }
+
+    public bool CheckPartyForItem(int id)
+    {
+        Item item = new Item(itemData[id]);
+
+        List<Character> party = PartyManager.instance.Members;
+
+        foreach (Character hero in party)
+        {
+            for (int i = 0; i < hero.InventoryItems.Length; i++)
+            {
+                if (hero.InventoryItems[i].ID == item.ID)
+                    return true;
+            }
+        }
+
+        return false;
+
+    }
+
+    public bool RemoveItemFromParty(int id)
+    {
+        Item item = new Item(itemData[id]);
+        Debug.Log($"Finding {item.ItemName}");
+
+        List<Character> selectedHero = PartyManager.instance.SelectChars;
+
+        foreach (Character hero in selectedHero)
+        {
+            for (int i = 0; i < hero.InventoryItems.Length; i++)
+            {
+                if (hero.InventoryItems[i].ID == item.ID)
+                {
+                    Debug.Log($"Removing {hero.InventoryItems[i].ItemName}");
+                    hero.InventoryItems[i] = null;
+                    Debug.Log($"Removed {hero.InventoryItems[i]}");
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void AddItemShopToNpc(int npcId, int itemId)
+    {
+        Item item = new Item(itemData[itemId]);
+        QuestManager.instance.NPCPerson[npcId].ShopItems.Add(item);
+    }
+
 }
