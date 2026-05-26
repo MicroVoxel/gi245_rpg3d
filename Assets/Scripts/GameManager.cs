@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
@@ -9,6 +9,11 @@ public class GameManager : MonoBehaviour
 
     private void Awake()
     {
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
         instance = this;
     }
 
@@ -31,28 +36,29 @@ public class GameManager : MonoBehaviour
     private void GeneratePlayerHero()
     {
         int i = Settings.playerPrefabId;
-
         GameObject heroObj = Instantiate(
             heroPrefabs[i],
             new Vector3(46f, 10f, 38f),
             Quaternion.identity
-            );
-
+        );
         heroObj.tag = "Player";
 
         Character hero = heroObj.GetComponent<Character>();
         PartyManager.instance.Members.Add(hero);
-
-        hero.CharInit(VFXManager.instance, UIManager.instance, InventoryManager.instance, PartyManager.instance);
+        hero.CharInit(UIManager.instance, InventoryManager.instance, PartyManager.instance);
 
         InventoryManager.instance.AddItem(hero, 0);
+        InventoryManager.instance.AddItem(hero, 1);
         InventoryManager.instance.AddItem(hero, 2);
 
+        // เรียกหลัง Add Hero เสร็จแล้ว
+        UIManager.instance.MapToggleAvatar();
     }
 
     private void WarpPlayers()
     {
         PartyManager.instance.LoadAllHeroData();
+        // เรียกหลัง Load Hero ทั้งหมดเสร็จแล้ว
+        UIManager.instance.MapToggleAvatar();
     }
-
 }

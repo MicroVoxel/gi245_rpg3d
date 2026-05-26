@@ -18,14 +18,18 @@ public class VFXManager : MonoBehaviour
         instance = this;
     }
 
-    void Start()
+    private void OnEnable()
     {
-
+        MyActions.onLoadMagic += LoadMagic;
+        MyActions.onShootMagic += ShootMagic;
+        MyActions.onCreateMagic += CreateMagic;
     }
 
-    void Update()
+    private void OnDisable()
     {
-        
+        MyActions.onLoadMagic -= LoadMagic;
+        MyActions.onShootMagic -= ShootMagic;
+        MyActions.onCreateMagic -= CreateMagic;
     }
 
     public void LoadMagic(int id, Vector3 posA, float time)
@@ -43,6 +47,11 @@ public class VFXManager : MonoBehaviour
         GameObject objShoot = Instantiate(MagicVFX[id], posA, Quaternion.identity);
         objShoot.transform.position = Vector3.Lerp(posA, posB, time);
         Destroy(objShoot, time);
+    }
+
+    public Magic CreateMagic(int id)
+    {
+        return new Magic(magicDatas[id]);
     }
 
 }

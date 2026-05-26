@@ -12,9 +12,9 @@ GameObject:
   - component: {fileID: 3393240}
   - component: {fileID: 2308086}
   - component: {fileID: 64807586940977826}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: SM_Item_Potion_05
-  m_TagString: Untagged
+  m_TagString: Item
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

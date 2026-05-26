@@ -8,6 +8,7 @@ TagManager:
   - Hero
   - Enemy
   - Ground
+  - Item
   layers:
   - Default
   - TransparentFX

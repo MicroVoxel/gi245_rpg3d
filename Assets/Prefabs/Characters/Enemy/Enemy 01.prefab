@@ -50,7 +50,7 @@ GameObject:
   - component: {fileID: 6290770005870779563}
   - component: {fileID: 4096957277160007853}
   m_Layer: 6
-  m_Name: Tormented_Soul 1
+  m_Name: Enemy 01
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -174,10 +174,11 @@ MonoBehaviour:
   ringSelection: {fileID: 0}
   curHp: 100
   maxHP: 100
+  baseDefense: 5
   curCharTarget: {fileID: 0}
   findingRange: 20
   attackRange: 2
-  attackDamage: 3
+  attackDamage: 5
   attackCooldown: 2
   attackTimer: 0
   magicSkills: []
@@ -5128,6 +5129,10 @@ PrefabInstance:
     - target: {fileID: 1107157273978836427, guid: 4f71a596ca24ba64c86af641747c2bdf, type: 3}
       propertyPath: m_Name
       value: Selected_VFX
+      objectReference: {fileID: 0}
+    - target: {fileID: 1107157273978836427, guid: 4f71a596ca24ba64c86af641747c2bdf, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2578521146470503909, guid: 4f71a596ca24ba64c86af641747c2bdf, type: 3}
       propertyPath: m_LocalPosition.x

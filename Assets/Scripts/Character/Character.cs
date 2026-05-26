@@ -50,9 +50,11 @@ public abstract class Character : MonoBehaviour
     [Header("Stats")]
     [SerializeField] protected int curHp = 10;
     [SerializeField] protected int maxHP = 100;
+    [SerializeField] protected int baseDefense = 5;
 
     public int CurHp { get { return curHp; } set { curHp = value; } }
     public int MaxHP { get { return maxHP; } }
+    public int BaseDefense { get { return baseDefense; } set { baseDefense = value; } }
     #endregion
 
     #region === TARGETING ===
@@ -112,7 +114,6 @@ public abstract class Character : MonoBehaviour
     #endregion
 
     #region === MANAGERS ===
-    protected VFXManager vfxManager;
     protected UIManager uiManager;
     protected InventoryManager invManager;
     protected PartyManager partyManager;
@@ -128,9 +129,8 @@ public abstract class Character : MonoBehaviour
     #endregion
 
     #region === INIT & STATE ===
-    public void CharInit(VFXManager vfxM, UIManager uiM, InventoryManager invM, PartyManager partyM)
+    public void CharInit(UIManager uiM, InventoryManager invM, PartyManager partyM)
     {
-        vfxManager = vfxM;
         uiManager = uiM;
         invManager = invM;
         partyManager = partyM;
@@ -221,6 +221,9 @@ public abstract class Character : MonoBehaviour
         transform.LookAt(curCharTarget.transform);
         anim.SetTrigger("Attack");
 
+        float n = Random.Range(0, 4);
+        anim.SetFloat("AttackValue", n);
+
         AttackLogic();
     }
 
@@ -231,6 +234,7 @@ public abstract class Character : MonoBehaviour
         if (curCharTarget.CurHp <= 0)
         {
             SetState(CharState.Idle);
+            curCharTarget = null;
             return;
         }
 
@@ -289,14 +293,16 @@ public abstract class Character : MonoBehaviour
     {
         if (curHp <= 0 || state == CharState.Die) return;
 
-        int damageAfter = dmg - defensePower;
+        // คำนวณพลังป้องกันรวม (Base + จากโล่)
+        int totalDefense = baseDefense + defensePower;
+        int damageAfter = dmg - totalDefense;
 
         if (damageAfter < 0)
         {
             damageAfter = 0;
         }
 
-        curHp -= dmg;
+        curHp -= damageAfter; // ใช้ damageAfter แทน dmg เดิมเพื่อคิดค่าป้องกัน
 
         if (curHp <= 0)
         {
@@ -338,7 +344,7 @@ public abstract class Character : MonoBehaviour
 
     private IEnumerator ShootMagicCast(Magic curMagicCast)
     {
-        if (curCharTarget == null || vfxManager == null)
+        if (curCharTarget == null || MyActions.onShootMagic == null)
             yield break;
 
         if (curCharTarget.CurHp <= 0)
@@ -350,7 +356,7 @@ public abstract class Character : MonoBehaviour
         Vector3 spawnPosition = transform.position + Vector3.up;
         Vector3 targetPosition = GetTargetCenter(curCharTarget);
 
-        vfxManager.ShootMagic(
+        MyActions.onShootMagic(
             curMagicCast.ShootId,
             spawnPosition,
             targetPosition,
@@ -374,9 +380,9 @@ public abstract class Character : MonoBehaviour
 
     private IEnumerator LoadMagicCast(Magic curMagicCast)
     {
-        if (vfxManager != null)
+        if (MyActions.onLoadMagic != null)
         {
-            vfxManager.LoadMagic(
+            MyActions.onLoadMagic(
                 CurMagicCast.LoadID,
                 transform.position + new Vector3(0, 1f, 0),
                 curMagicCast.LoadTime
@@ -444,7 +450,7 @@ public abstract class Character : MonoBehaviour
     {
         if (mainWeapon != null)
         {
-            defensePower -= mainWeapon.Power;
+            attackPower -= mainWeapon.Power; // แก้ไขให้ลบ attackPower แทน defensePower
             mainWeapon = null;
             Destroy(weaponObj);
         }

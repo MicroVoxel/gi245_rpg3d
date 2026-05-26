@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class ItemPick : MonoBehaviour
 {
@@ -15,23 +15,15 @@ public class ItemPick : MonoBehaviour
         this.partyManager = ptyManager;
     }
 
-    private void PickUpItem(Character hero)
+    public void PickUpItem()
     {
-        if (inventoryManager.AddItem(hero, item.ID))
+        // [FIX] Guard กรณี SelectChars ว่าง ป้องกัน IndexOutOfRangeException
+        if (partyManager.SelectChars.Count == 0) return;
+        if (item == null) return;
+
+        if (inventoryManager.AddItem(partyManager.SelectChars[0], item.ID))
         {
             Destroy(gameObject);
         }
     }
-
-    private void OnMouseDown()
-    {
-        Debug.Log("Pick Up");
-
-        if (partyManager.SelectChars.Count > 0)
-        {
-            PickUpItem(partyManager.SelectChars[0]);
-        }
-
-    }
-
 }

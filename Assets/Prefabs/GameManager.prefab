@@ -217,6 +217,8 @@ MonoBehaviour:
   heroPrefabs:
   - {fileID: 162860, guid: fb15e8b46875b4442856c418eece1e02, type: 3}
   - {fileID: 131680, guid: 033d2299cf7556b49b896d2312865cbc, type: 3}
+  - {fileID: 131680, guid: 568e4544b0f382e4d9e15acc4690e4e7, type: 3}
+  - {fileID: 131680, guid: 656c0b97917e45f4387f2a247c0f3190, type: 3}
 --- !u!114 &5211516089723323575
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -229,4 +231,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad635bc2b7f6b3546865d838bb0990e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapManager
-  enterPoints: []
+  enterPoints:
+  - {fileID: 0}

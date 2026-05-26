@@ -1222,7 +1222,7 @@ GameObject:
   - component: {fileID: -3818697610694490787}
   - component: {fileID: 6696973849887114957}
   m_Layer: 6
-  m_Name: NPC_Golem
+  m_Name: NPC_Quest 01
   m_TagString: NPC
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1371,6 +1371,7 @@ MonoBehaviour:
   ringSelection: {fileID: 0}
   curHp: 100
   maxHP: 100
+  baseDefense: 5
   curCharTarget: {fileID: 0}
   findingRange: 20
   attackRange: 2
@@ -1413,8 +1414,8 @@ MonoBehaviour:
   shieldObj: {fileID: 0}
   defensePower: 0
   isShopKeeper: 0
-  shopItems: []
   npcMoney: 3000
+  shopItems: []
   questToGive: []
 --- !u!1 &133228
 GameObject:

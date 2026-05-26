@@ -1,8 +1,15 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
+/// <summary>
+/// จัดการระบบช่องเก็บของส่วนกลาง (Inventory)
+/// </summary>
 public class InventoryManager : MonoBehaviour
 {
+    public static InventoryManager instance;
+
+    #region === DATA & CONFIG ===
+    [Header("Item Database")]
     [SerializeField] private GameObject[] itemPrefabs;
     public GameObject[] ItemPrefabs { get { return itemPrefabs; } set { itemPrefabs = value; } }
 
@@ -10,17 +17,19 @@ public class InventoryManager : MonoBehaviour
     public ItemData[] ItemData { get { return itemData; } set { itemData = value; } }
 
     public const int MAXSLOT = 18;
+    public const int INVENTORY_CAPACITY = 16;
+    public const int SHIELD_SLOT = 16;
+    public const int WEAPON_SLOT = 17;
+    #endregion
 
-    public static InventoryManager instance;
-
-    void Awake()
+    #region === UNITY CALLBACKS ===
+    private void Awake()
     {
         if (instance != null && instance != this)
         {
             Destroy(gameObject);
             return;
         }
-
         instance = this;
     }
 
@@ -30,12 +39,14 @@ public class InventoryManager : MonoBehaviour
         AddItemShopToNpc(1, 2);
         AddItemShopToNpc(1, 5);
     }
+    #endregion
 
+    #region === INVENTORY LOGIC ===
     public bool AddItem(Character character, int id)
     {
         Item item = new Item(itemData[id]);
 
-        for (int i = 0; i < character.InventoryItems.Length; i++)
+        for (int i = 0; i < INVENTORY_CAPACITY; i++)
         {
             if (character.InventoryItems[i] == null)
             {
@@ -51,77 +62,109 @@ public class InventoryManager : MonoBehaviour
     {
         if (PartyManager.instance.SelectChars.Count == 0) return;
 
-        PartyManager.instance.SelectChars[0].InventoryItems[index] = item;
+        Character hero = PartyManager.instance.SelectChars[0];
+
+        // [FIX LOGIC] ถอดของเก่าออกก่อน (ถ้ามี) ป้องกันสเตตัสบวกทบกันและโมเดลซ้อนกัน
+        if (hero.InventoryItems[index] != null)
+        {
+            RemoveItemInBag(index);
+        }
+
+        hero.InventoryItems[index] = item;
 
         switch (index)
         {
-            case 16:
-                PartyManager.instance.SelectChars[0].EquipShield(item); 
+            case SHIELD_SLOT:
+                hero.EquipShield(item);
                 break;
-            case 17:
-                PartyManager.instance.SelectChars[0].EquipWeapon(item); 
-                break;    
+            case WEAPON_SLOT:
+                hero.EquipWeapon(item);
+                break;
         }
-
     }
 
     public void RemoveItemInBag(int index)
     {
         if (PartyManager.instance.SelectChars.Count == 0) return;
 
-        PartyManager.instance.SelectChars[0].InventoryItems[index] = null;
+        Character hero = PartyManager.instance.SelectChars[0];
 
         switch (index)
         {
-            case 16:
-                PartyManager.instance.SelectChars[0].UnEquipShield();
+            case SHIELD_SLOT:
+                hero.UnEquipShield();
                 break;
-            case 17:
-                PartyManager.instance.SelectChars[0].UnEquipWeapon();
+            case WEAPON_SLOT:
+                hero.UnEquipWeapon();
                 break;
         }
+
+        hero.InventoryItems[index] = null;
     }
 
-    private void SpawnDropItem(Item item, Vector3 pos)
+    // [NEW] ฟังก์ชันสำหรับ UIManager ที่สั่งขายของออกจากช่องไหนก็ได้
+    public void RemoveItemFromHeroBag(Character hero, int itemID)
     {
-        int id;
-
-        switch (item.Type)
+        for (int i = 0; i < MAXSLOT; i++)
         {
-            case ItemType.Consumable:
-                id = 1;
-                break;
-            default:
-                id = 0;
-                break;
+            if (hero.InventoryItems[i] != null && hero.InventoryItems[i].ID == itemID)
+            {
+                // ตรวจสอบและ UnEquip ด้วยหากเป็นช่องสวมใส่
+                if (i == SHIELD_SLOT) hero.UnEquipShield();
+                else if (i == WEAPON_SLOT) hero.UnEquipWeapon();
+
+                hero.InventoryItems[i] = null;
+                return;
+            }
         }
-
-        LayerMask groundLayer = LayerMask.GetMask("Ground");
-        RaycastHit hit;
-        Vector3 rayStart = pos + Vector3.up * 5f;
-        if (Physics.Raycast(rayStart, Vector3.down, out hit, 20f, groundLayer))
-        {
-            pos = hit.point;
-        }
-
-        GameObject itemObj = Instantiate(ItemPrefabs[id], pos, Quaternion.identity);
-
-        Collider col = itemObj.GetComponentInChildren<Collider>();
-        if (col != null)
-        {
-            Vector3 adjustedPos = itemObj.transform.position;
-            adjustedPos.y += col.bounds.extents.y;
-            itemObj.transform.position = adjustedPos;
-        }
-
-        ItemPick itemPick = itemObj.GetComponent<ItemPick>();
-        if (itemPick == null)
-            itemPick = itemObj.AddComponent<ItemPick>();
-
-        itemPick.Init(item, instance, PartyManager.instance);
-
     }
 
+    public void DrinkConsumableItem(Item item, int slotID)
+    {
+        if (PartyManager.instance.SelectChars.Count > 0)
+        {
+            PartyManager.instance.SelectChars[0].Recover(item.Power);
+            RemoveItemInBag(slotID);
+        }
+    }
+    #endregion
+
+    #region === QUEST & PARTY INVENTORY LOGIC ===
+    public bool CheckPartyForItem(int id)
+    {
+        List<Character> party = PartyManager.instance.Members;
+
+        foreach (Character hero in party)
+        {
+            for (int i = 0; i < INVENTORY_CAPACITY; i++)
+            {
+                if (hero.InventoryItems[i] != null && hero.InventoryItems[i].ID == id)
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    public bool RemoveItemFromParty(int id)
+    {
+        List<Character> party = PartyManager.instance.Members;
+
+        foreach (Character hero in party)
+        {
+            for (int i = 0; i < INVENTORY_CAPACITY; i++)
+            {
+                if (hero.InventoryItems[i] != null && hero.InventoryItems[i].ID == id)
+                {
+                    hero.InventoryItems[i] = null;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    #endregion
+
+    #region === DROP SYSTEM ===
     public void SpawnDropInventory(Item[] items, Vector3 pos)
     {
         float minRadius = 0.3f;
@@ -145,65 +188,41 @@ public class InventoryManager : MonoBehaviour
         }
     }
 
-    public void DrinkConsumableItem(Item item, int slotID)
+    private void SpawnDropItem(Item item, Vector3 pos)
     {
-        string s = string.Format("Drink: {0}", item.ItemName);
-        Debug.Log(s);
+        int id = item.Type == ItemType.Consumable ? 1 : 0;
 
-        if(PartyManager.instance.SelectChars.Count > 0)
+        LayerMask groundLayer = LayerMask.GetMask("Ground");
+        Vector3 rayStart = pos + Vector3.up * 5f;
+
+        if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 20f, groundLayer))
         {
-            PartyManager.instance.SelectChars[0].Recover(item.Power);
-            RemoveItemInBag(slotID);
+            pos = hit.point;
         }
 
-    }
+        GameObject itemObj = Instantiate(ItemPrefabs[id], pos, Quaternion.identity);
 
-    public bool CheckPartyForItem(int id)
-    {
-        Item item = new Item(itemData[id]);
-
-        List<Character> party = PartyManager.instance.Members;
-
-        foreach (Character hero in party)
+        Collider col = itemObj.GetComponentInChildren<Collider>();
+        if (col != null)
         {
-            for (int i = 0; i < hero.InventoryItems.Length; i++)
-            {
-                if (hero.InventoryItems[i].ID == item.ID)
-                    return true;
-            }
+            Vector3 adjustedPos = itemObj.transform.position;
+            adjustedPos.y += col.bounds.extents.y;
+            itemObj.transform.position = adjustedPos;
         }
 
-        return false;
+        ItemPick itemPick = itemObj.GetComponent<ItemPick>();
+        if (itemPick == null)
+            itemPick = itemObj.AddComponent<ItemPick>();
 
+        itemPick.Init(item, instance, PartyManager.instance);
     }
+    #endregion
 
-    public bool RemoveItemFromParty(int id)
-    {
-        Item item = new Item(itemData[id]);
-        Debug.Log($"Finding {item.ItemName}");
-
-        List<Character> selectedHero = PartyManager.instance.SelectChars;
-
-        foreach (Character hero in selectedHero)
-        {
-            for (int i = 0; i < hero.InventoryItems.Length; i++)
-            {
-                if (hero.InventoryItems[i].ID == item.ID)
-                {
-                    Debug.Log($"Removing {hero.InventoryItems[i].ItemName}");
-                    hero.InventoryItems[i] = null;
-                    Debug.Log($"Removed {hero.InventoryItems[i]}");
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
+    #region === SHOP INITIALIZATION ===
     private void AddItemShopToNpc(int npcId, int itemId)
     {
         Item item = new Item(itemData[itemId]);
         QuestManager.instance.NPCPerson[npcId].ShopItems.Add(item);
     }
-
+    #endregion
 }
