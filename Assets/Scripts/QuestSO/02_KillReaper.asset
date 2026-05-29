@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b5f56dc2e93473438bcb44da1f24ab2, type: 3}
+  m_Name: 02_KillReaper
+  m_EditorClassIdentifier: Assembly-CSharp::QuestData
+  questId: 2
+  type: 1
+  status: 0
+  questName: Kill all reapers.
+  questDetail: Kill all reapers in this area.
+  questItemId: -1
+  targetEnemyId: 0
+  requiredKillCount: 5
+  questDialogue:
+  - Hello, adventurers. How are you?
+  - Can I ask you something?
+  - Could you kill all reaper in this area?
+  answerNext:
+  - Hi, nice to meet you.
+  - Go ahead, I'm listening.
+  anwerAccept: Yes, I shall do it for you.
+  answerReject: Sorry, I couldn't help you.
+  questionInProgress: Have kill all of it?
+  answerFinish: Yes, check it out.
+  answerNotFinish: Not yet, please wait.
+  rewardItemId: 0
+  rewardExp: 200

@@ -34,7 +34,11 @@ public class LeftClick : MonoBehaviour
         instance = this;
         cam = Camera.main;
         layerMask = LayerMask.GetMask("Ground", "Character", "Building", "Item");
-        boxSelection = UIManager.instance.SelectionBox;
+
+        if (UIManager.instance != null)
+        {
+            boxSelection = UIManager.instance.SelectionBox;
+        }
     }
 
     private void Update()
@@ -48,10 +52,10 @@ public class LeftClick : MonoBehaviour
     #region === INPUT HANDLERS ===
     private void HandleMouseDown()
     {
-        if (!Mouse.current.leftButton.wasPressedThisFrame) return;
+        if (Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame) return;
 
         // เช็คก่อนว่าเมาส์จิ้มอยู่บน UI หรือเปล่า
-        isPointerOverUIOnDown = EventSystem.current.IsPointerOverGameObject();
+        isPointerOverUIOnDown = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
         if (isPointerOverUIOnDown) return;
 
         startPos = Mouse.current.position.value;
@@ -59,6 +63,8 @@ public class LeftClick : MonoBehaviour
 
     private void HandleMouseHeld()
     {
+        if (Mouse.current == null) return;
+
         // หากเริ่มกดจาก UI ห้ามลากกล่องเด็ดขาด
         if (!Mouse.current.leftButton.isPressed || isPointerOverUIOnDown) return;
 
@@ -67,7 +73,7 @@ public class LeftClick : MonoBehaviour
 
     private void HandleMouseUp()
     {
-        if (!Mouse.current.leftButton.wasReleasedThisFrame) return;
+        if (Mouse.current == null || !Mouse.current.leftButton.wasReleasedThisFrame) return;
 
         // หากเริ่มกดจาก UI ตอนปล่อยเมาส์ไม่ต้อง Raycast หาสิ่งที่อยู่ด้านหลัง
         if (isPointerOverUIOnDown) return;
@@ -83,6 +89,8 @@ public class LeftClick : MonoBehaviour
     /// </summary>
     private void TrySelect(Vector2 screenPos)
     {
+        if (renderTextureUI == null || cam == null) return;
+
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
             renderTextureUI, screenPos, null, out Vector2 localPoint)) return;
 
@@ -103,6 +111,11 @@ public class LeftClick : MonoBehaviour
             }
         }
 
+        if (PartyManager.instance == null || UIManager.instance == null) return;
+
+        // ดึงขยะ Null หรือตัวละครที่ตายแล้วออกจาก List ของ SelectChars ก่อนตรวจสอบจำนวน
+        CleanDestroyedSelections();
+
         // ถ้าคลิกพลาดหรือหลุดการเลือก ให้กลับไปเลือกตัวหลัก (Index 0)
         if (PartyManager.instance.SelectChars.Count == 0)
         {
@@ -117,9 +130,15 @@ public class LeftClick : MonoBehaviour
     /// </summary>
     private void SelectCharacter(RaycastHit hit)
     {
+        if (PartyManager.instance == null || UIManager.instance == null) return;
+
         ClearAllSelections();
 
         Character hero = hit.collider.GetComponent<Character>();
+
+        // [SAFETY CHECK]: ตรวจสอบความปลอดภัยของตัวละครที่ถูกคลิกเลือก
+        if (hero == null || hero.State == CharState.Die) return;
+
         int i = PartyManager.instance.FindIndexFromClass(hero);
 
         // จัดการ Data ตรงๆ ที่ PartyManager
@@ -139,15 +158,42 @@ public class LeftClick : MonoBehaviour
     /// </summary>
     private void ClearAllSelections()
     {
+        if (PartyManager.instance == null || UIManager.instance == null) return;
+
         // ปิด Toggle ทุกตัว แบบไม่ส่ง Event
         UIManager.instance.SetAllAvatarTogglesWithoutNotify(false);
 
-        // ปิด Ring ทุกตัว
+        // ปิด Ring ทุกตัว (เพิ่ม Null Check ป้องกัน MissingReferenceException)
         foreach (Character c in PartyManager.instance.SelectChars)
-            c.ToggleRingSelection(false);
+        {
+            if (c != null)
+            {
+                c.ToggleRingSelection(false);
+            }
+        }
 
         PartyManager.instance.SelectChars.Clear();
         UIManager.instance.ResetMagicToggles();
+    }
+
+    /// <summary>
+    /// Helper: กรองข้อมูลขยะ (Null/ตัวที่ตายแล้ว) ออกจากลิสต์การเลือก เพื่อป้องกัน Exception ในสคริปต์อื่น
+    /// </summary>
+    private void CleanDestroyedSelections()
+    {
+        if (PartyManager.instance == null) return;
+
+        List<Character> activeSelections = new List<Character>();
+        foreach (Character c in PartyManager.instance.SelectChars)
+        {
+            if (c != null && c.State != CharState.Die)
+            {
+                activeSelections.Add(c);
+            }
+        }
+
+        PartyManager.instance.SelectChars.Clear();
+        PartyManager.instance.SelectChars.AddRange(activeSelections);
     }
     #endregion
 
@@ -157,6 +203,8 @@ public class LeftClick : MonoBehaviour
     /// </summary>
     private void UpdateSelectionBox(Vector2 mousePos)
     {
+        if (boxSelection == null) return;
+
         if (!boxSelection.gameObject.activeInHierarchy)
             boxSelection.gameObject.SetActive(true);
 
@@ -174,6 +222,8 @@ public class LeftClick : MonoBehaviour
     /// </summary>
     private void ReleaseSelectionBox(Vector2 mousePos)
     {
+        if (boxSelection == null || PartyManager.instance == null || UIManager.instance == null || cam == null) return;
+
         boxSelection.gameObject.SetActive(false);
 
         Vector2 halfSize = boxSelection.sizeDelta / 2f;
@@ -184,6 +234,16 @@ public class LeftClick : MonoBehaviour
 
         foreach (Character member in PartyManager.instance.Members)
         {
+            // 💡 [CRITICAL FIX]: ข้ามการตรวจสอบหากตัวละครถูกทำลาย (เป็น Null) หรือตายแล้ว เพื่อป้องกัน MissingReferenceException
+            if (member == null || member.State == CharState.Die)
+            {
+                if (member != null)
+                {
+                    member.ToggleRingSelection(false);
+                }
+                continue;
+            }
+
             Vector2 unitScreenPos = cam.WorldToScreenPoint(member.transform.position);
 
             bool insideX = unitScreenPos.x > corner1.x && unitScreenPos.x < corner2.x;
@@ -191,7 +251,7 @@ public class LeftClick : MonoBehaviour
 
             if (insideX && insideY)
             {
-                if (anyNewCharSelect == false)
+                if (!anyNewCharSelect)
                 {
                     anyNewCharSelect = true;
                     ClearAllSelections();
@@ -225,7 +285,11 @@ public class LeftClick : MonoBehaviour
 
     private void SelectItem(RaycastHit hit)
     {
+        if (PartyManager.instance == null || UIManager.instance == null) return;
+
         ItemPick itemPick = hit.collider.GetComponent<ItemPick>();
+
+        CleanDestroyedSelections();
 
         if (PartyManager.instance.SelectChars.Count == 0)
         {

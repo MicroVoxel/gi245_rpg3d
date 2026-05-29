@@ -16,6 +16,6 @@ MonoBehaviour:
   itemName: Bread
   type: 0
   icon: {fileID: 21300000, guid: 156b4615ca20a1642950a446156d542c, type: 3}
-  power: 5
-  prefabID: 0
-  normalPrice: 15
+  power: 10
+  normalPrice: 20
+  itemPrefab: {fileID: 2183001951008068311, guid: a467ef9f88aba8c44bffdda477805333, type: 3}

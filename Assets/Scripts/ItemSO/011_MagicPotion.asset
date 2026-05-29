@@ -15,7 +15,7 @@ MonoBehaviour:
   id: 11
   itemName: Magic Potion
   type: 0
-  icon: {fileID: 21300000, guid: 9b880add1daeac246ac90b984854d4fd, type: 3}
+  icon: {fileID: 21300000, guid: 9ef538aefae3c3a4fac14713ef47f83d, type: 3}
   power: 20
-  prefabID: 6
   normalPrice: 45
+  itemPrefab: {fileID: 156772, guid: 740433f6d895563459cbd387003b288e, type: 3}

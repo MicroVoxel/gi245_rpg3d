@@ -380,9 +380,22 @@ MonoBehaviour:
   shieldHand: {fileID: 8204273113789974834}
   shieldObj: {fileID: 0}
   defensePower: 0
+  attackSfxIndex: -1
+  hitSfxIndex: -1
+  dieSfxIndex: -1
+  magicCastSfxIndex: -1
   isShopKeeper: 1
-  npcMoney: 1500
-  shopItems: []
+  npcMoney: 1000
+  shopItems:
+  - {fileID: 11400000, guid: 7fcc15f5b0493f045842d53ea7970879, type: 2}
+  - {fileID: 11400000, guid: 7fcc15f5b0493f045842d53ea7970879, type: 2}
+  - {fileID: 11400000, guid: bd723fa849ed1c2438e25be6ff1cfca1, type: 2}
+  - {fileID: 11400000, guid: bd723fa849ed1c2438e25be6ff1cfca1, type: 2}
+  - {fileID: 11400000, guid: 55130988639d40a438fe02df04102eb3, type: 2}
+  - {fileID: 11400000, guid: 55130988639d40a438fe02df04102eb3, type: 2}
+  - {fileID: 11400000, guid: f3490db047c023a4b85dc2542b59041b, type: 2}
+  - {fileID: 11400000, guid: f3490db047c023a4b85dc2542b59041b, type: 2}
+  startingQuestData: []
   questToGive: []
 --- !u!1 &721335215836712895
 GameObject:

@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   id: 5
   itemName: Book
-  type: 7
+  type: 6
   icon: {fileID: 21300000, guid: 0354f4aec88decd49814d2050f74ec5d, type: 3}
   power: 0
-  prefabID: 0
-  normalPrice: 250
+  normalPrice: 1000
+  itemPrefab: {fileID: 166544, guid: fde1066bafe28d142885e7e6583ee49d, type: 3}

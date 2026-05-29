@@ -91,10 +91,22 @@ MonoBehaviour:
   - {fileID: 1722081097931586, guid: 73793dcc43410ee40a0a99fccbf8b8f1, type: 3}
   - {fileID: 1739096776086156, guid: d1361cae7ac9726408a36598711535ae, type: 3}
   - {fileID: 1828717585066262, guid: b15eac060ea6be84e821e14921aea415, type: 3}
+  - {fileID: 1352952055292810, guid: f529441a5f2987148a4738d7e3fd39ae, type: 3}
+  - {fileID: 1879769179923522, guid: 89b77de2f30f0a746ad7b9460251da3f, type: 3}
+  - {fileID: 1809022330002312, guid: 89540f5adf7917c4d9ea436fcbf257ae, type: 3}
+  - {fileID: 1380329679129358, guid: 45af511207be53541b4999b0f12cc111, type: 3}
+  - {fileID: 1132465174880224, guid: 0667320b8109be3498ebe8b746c4e574, type: 3}
+  - {fileID: 1610468776334564, guid: 3bee5412d4877c34799bf2266e71087b, type: 3}
   magicDatas:
   - {fileID: 11400000, guid: c96c8ac12059b9f4183ef84bfadf0d42, type: 2}
   - {fileID: 11400000, guid: 681a079936cc13d4aba343fcd4d073f9, type: 2}
   - {fileID: 11400000, guid: 8ffea49dc7b409246a8c214f807537de, type: 2}
+  - {fileID: 11400000, guid: df59f6d784250fe47b7e903ead87a291, type: 2}
+  - {fileID: 11400000, guid: 8d554d9dde8560049b2ef568f04b5bab, type: 2}
+  - {fileID: 11400000, guid: 4fffb8e70d19146449a54167348185aa, type: 2}
+  - {fileID: 11400000, guid: 4e7c44c9439469b438b7bdfba6be3ebc, type: 2}
+  - {fileID: 11400000, guid: bb989b3c077e0d24b83599d735e248c9, type: 2}
+  - {fileID: 11400000, guid: c3a1db45126e3f94699a4466ffca5e96, type: 2}
 --- !u!114 &5362576268369178462
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -133,12 +145,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InventoryManager
   itemPrefabs:
   - {fileID: 2183001951008068311, guid: a467ef9f88aba8c44bffdda477805333, type: 3}
+  - {fileID: 166544, guid: fde1066bafe28d142885e7e6583ee49d, type: 3}
   - {fileID: 157152, guid: 5a7ec6048ef58b8499a7930a7aca8577, type: 3}
-  - {fileID: 149276, guid: 5d3f2c39f6b33aa4b87403aa1e60618d, type: 3}
-  - {fileID: 134266, guid: 05ddca093c908fe4897f90296d0d4233, type: 3}
-  - {fileID: 148790, guid: a80d1c04db180524e9f0fdb08817abe8, type: 3}
-  - {fileID: 195570, guid: ee66a4235a681dd4996c24d7c7c0d2bb, type: 3}
   - {fileID: 156772, guid: 740433f6d895563459cbd387003b288e, type: 3}
+  - {fileID: 134266, guid: 05ddca093c908fe4897f90296d0d4233, type: 3}
+  - {fileID: 149276, guid: 5d3f2c39f6b33aa4b87403aa1e60618d, type: 3}
+  - {fileID: 195570, guid: ee66a4235a681dd4996c24d7c7c0d2bb, type: 3}
+  - {fileID: 148790, guid: a80d1c04db180524e9f0fdb08817abe8, type: 3}
   itemData:
   - {fileID: 11400000, guid: 09e4c727c947a804c93d64b4353121e5, type: 2}
   - {fileID: 11400000, guid: e1610c9714fa1aa46b630ad886897775, type: 2}
@@ -152,6 +165,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 03f1b7bc0ae3d3847be787bfd45f61d7, type: 2}
   - {fileID: 11400000, guid: 39819157e8644434b8511b112419831f, type: 2}
   - {fileID: 11400000, guid: 599f975bd7d4e984dbd9072c3890063c, type: 2}
+  - {fileID: 11400000, guid: 7fcc15f5b0493f045842d53ea7970879, type: 2}
+  - {fileID: 11400000, guid: bd723fa849ed1c2438e25be6ff1cfca1, type: 2}
+  - {fileID: 11400000, guid: 55130988639d40a438fe02df04102eb3, type: 2}
+  - {fileID: 11400000, guid: f3490db047c023a4b85dc2542b59041b, type: 2}
 --- !u!114 &2877909714678007644
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -165,6 +182,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyManager
   monsters:
+  - {fileID: 0}
+  - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
@@ -183,8 +202,14 @@ MonoBehaviour:
   npcPerson:
   - {fileID: 0}
   - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   questData:
   - {fileID: 11400000, guid: 8dcc0119521171748b2c3e4b5cb412fb, type: 2}
+  - {fileID: 11400000, guid: cb28268d736536f42a79c135a63d8040, type: 2}
+  - {fileID: 11400000, guid: 6dcc6554678529e4abe2734236ff9a56, type: 2}
   curNpc: {fileID: 0}
   curQuest:
     questId: 0
@@ -193,15 +218,18 @@ MonoBehaviour:
     questName: 
     questDetail: 
     questItemId: 0
+    targetEnemyId: 0
+    requiredKillCount: 0
+    currentKillCount: 0
     questDialogue: []
     answerNext: []
     answerAccept: 
     answerReject: 
-    rewardItemId: 0
-    rewardExp: 0
     questionInProgress: 
     answerFinish: 
     answerNotFinish: 
+    rewardItemId: 0
+    rewardExp: 0
 --- !u!114 &7498916083494623115
 MonoBehaviour:
   m_ObjectHideFlags: 0

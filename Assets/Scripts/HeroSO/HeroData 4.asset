@@ -14,10 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HeroData
   prefabId: 0
   curHp: 0
+  maxHP: 0
   magicIds: 
-  inventoryItemIds: 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  inventoryItemIds: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+  mainWeaponId: -1
+  shieldId: -1
   attackDamage: 0
-  defensePower: 0
+  baseDefense: 0
   exp: 0
   level: 0
   nextExp: 0
+  strength: 0
+  dexterity: 0
+  constitution: 0
+  intelligence: 0
+  wisdom: 0
+  charisma: 0

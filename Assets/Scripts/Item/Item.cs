@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public enum ItemType
 {
@@ -30,20 +30,36 @@ public class Item
     [SerializeField] private int power;
     public int Power { get { return power; } }
 
-    [SerializeField] private int prefabID;
-    public int PrefabID { get { return prefabID; } }
+    [SerializeField] private GameObject itemPrefab;
+    public GameObject ItemPrefab { get { return itemPrefab; } }
 
     [SerializeField] private int normalPrice;
-    public int NormalPrice {  get { return normalPrice; } }
+    public int NormalPrice { get { return normalPrice; } }
 
+    /// <summary>
+    /// Default Constructor จำเป็นมากสำหรับระบบ Unity Serialization (ป้องกันไม่ให้ Array กระเป๋าเป้เป็น Null หรือพัง)
+    /// </summary>
+    public Item()
+    {
+    }
+
+    /// <summary>
+    /// Constructor สำหรับแปลงข้อมูลจาก ItemData (ScriptableObject) มาสร้างเป็น Item (Instance) สำหรับตัวละคร
+    /// </summary>
     public Item(ItemData data)
     {
+        if (data == null)
+        {
+            Debug.LogWarning("Item: พยายามสร้างไอเทมจาก ItemData ที่ว่างเปล่า (Null)");
+            return;
+        }
+
         id = data.id;
         itemName = data.itemName;
         type = data.type;
         icon = data.icon;
         power = data.power;
-        prefabID = data.prefabID;
+        itemPrefab = data.itemPrefab; // ทำการคัดลอกตำแหน่ง GameObject Prefab มาใช้งาน
         normalPrice = data.normalPrice;
     }
 }

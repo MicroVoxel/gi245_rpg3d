@@ -1353,6 +1353,9 @@ MonoBehaviour:
   attackDamage: 5
   attackCooldown: 2
   attackTimer: 0
+  startingMagics:
+  - {fileID: 11400000, guid: df59f6d784250fe47b7e903ead87a291, type: 2}
+  - {fileID: 11400000, guid: 8d554d9dde8560049b2ef568f04b5bab, type: 2}
   magicSkills: []
   curMagicCast:
     id: 0
@@ -1364,6 +1367,8 @@ MonoBehaviour:
     shootTime: 0
     loadID: 0
     shootId: 0
+    type: 0
+    duration: 0
   isMagicMode: 0
   inventoryItems: []
   mainWeapon:
@@ -1372,7 +1377,7 @@ MonoBehaviour:
     type: 0
     icon: {fileID: 0}
     power: 0
-    prefabID: 0
+    itemPrefab: {fileID: 0}
     normalPrice: 0
   weaponHand: {fileID: 475994}
   weaponObj: {fileID: 0}
@@ -1383,11 +1388,15 @@ MonoBehaviour:
     type: 0
     icon: {fileID: 0}
     power: 0
-    prefabID: 0
+    itemPrefab: {fileID: 0}
     normalPrice: 0
   shieldHand: {fileID: 479758}
   shieldObj: {fileID: 0}
   defensePower: 0
+  attackSfxIndex: 3
+  hitSfxIndex: 5
+  dieSfxIndex: 0
+  magicCastSfxIndex: 8
   prefabId: 1
   exp: 0
   level: 1
@@ -1398,6 +1407,7 @@ MonoBehaviour:
   intelligence: 16
   wisdom: 9
   charisma: 17
+  levelUpSfxIndex: 10
 --- !u!114 &-606113389925064878
 MonoBehaviour:
   m_ObjectHideFlags: 0

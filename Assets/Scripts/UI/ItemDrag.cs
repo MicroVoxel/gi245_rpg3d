@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
@@ -53,11 +53,17 @@ public class ItemDrag : MonoBehaviour,
     {
         if (eventData.button == PointerEventData.InputButton.Right)
         {
-            Debug.Log("Right Click on Item");
-            if(item.Type == ItemType.Consumable)
+            // เช็คว่าไอเทมมีตัวตน (ป้องกันไอเทมผี)
+            if (item != null && !string.IsNullOrEmpty(item.ItemName))
             {
-                uiManager.SetCurItemInUse(this, FindIndexOfSlotParent());
-                uiManager.ToggleItemDialog(true);
+                Debug.Log("Right Click on Item: " + item.ItemName);
+
+                if (item.Type == ItemType.Consumable)
+                {
+                    uiManager.SetCurItemInUse(this, FindIndexOfSlotParent());
+                    // ส่ง item ไปด้วยเพื่อให้ Dialog แสดงข้อมูล
+                    uiManager.ToggleItemDialog(true, item);
+                }
             }
         }
     }

@@ -17,5 +17,5 @@ MonoBehaviour:
   type: 1
   icon: {fileID: 21300000, guid: a0e0c014f58721d41a86c739fe63f916, type: 3}
   power: 0
-  prefabID: 0
   normalPrice: 150
+  itemPrefab: {fileID: 2183001951008068311, guid: a467ef9f88aba8c44bffdda477805333, type: 3}

@@ -16,6 +16,6 @@ MonoBehaviour:
   itemName: Fish
   type: 0
   icon: {fileID: 21300000, guid: e283fd6cfabf46948b9920fde1d3746c, type: 3}
-  power: 5
-  prefabID: 0
-  normalPrice: 30
+  power: 25
+  normalPrice: 50
+  itemPrefab: {fileID: 2183001951008068311, guid: a467ef9f88aba8c44bffdda477805333, type: 3}

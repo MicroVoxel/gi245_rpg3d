@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 /// <summary>
 /// จัดการระบบเควสส่วนกลาง: ตรวจสอบสถานะ, การตอบโต้บทสนทนา, และการมอบรางวัล
@@ -6,6 +7,10 @@
 public class QuestManager : MonoBehaviour
 {
     public static QuestManager instance;
+
+    // [NEW] Event สำหรับแจ้งเตือนเมื่อมีศัตรูตาย (Observer Pattern)
+    // ส่งค่า ID ของศัตรูตัวนั้นๆ แนบมาด้วย
+    public static Action<int> OnEnemyKilled;
 
     #region === DATA & STATE ===
     [Header("Database")]
@@ -36,25 +41,57 @@ public class QuestManager : MonoBehaviour
 
     private void Start()
     {
-        // ลบการ Hardcode AddQuestToNPC ทิ้งไป
-        // และให้ Manager สั่ง NPC แต่ละตัวจัดการตัวเอง (Encapsulation)
         foreach (Character character in npcPerson)
         {
             character.CharInit(UIManager.instance, InventoryManager.instance, PartyManager.instance);
 
-            // เช็คว่าเป็น NPC หรือไม่ ถ้าใช่ให้โหลดเควสเริ่มต้นที่ตั้งค่าไว้ใน Inspector ของตัวมันเอง
             if (character is Npc npc)
             {
                 npc.InitializeStartingQuests();
             }
         }
     }
+
+    // [NEW] Subscribe Event เมื่อเปิดปิด Object เพื่อป้องกัน Memory Leak
+    private void OnEnable()
+    {
+        OnEnemyKilled += UpdateKillCountQuests;
+    }
+
+    private void OnDisable()
+    {
+        OnEnemyKilled -= UpdateKillCountQuests;
+    }
     #endregion
 
     #region === QUEST LOGIC & CHECKING ===
     /// <summary>
-    /// ดึงเควสจาก NPC ตามสถานะที่ต้องการ และเก็บเป็น State ปัจจุบันของ Manager
+    /// อัปเดตจำนวนการฆ่า (ทำงานก็ต่อเมื่อ Event OnEnemyKilled ถูกเรียกเท่านั้น)
     /// </summary>
+    private void UpdateKillCountQuests(int killedEnemyId)
+    {
+        if (PartyManager.instance == null) return;
+
+        // วนลูปหาเฉพาะเควสในปาร์ตี้ที่กำลังทำอยู่ (InProgress) และเป็นเควสประเภท KillCount
+        foreach (Quest q in PartyManager.instance.QuestList)
+        {
+            if (q.Status == QuestStatus.InProgress && q.Type == QuestType.KillCount)
+            {
+                // ตรวจสอบว่าศัตรูที่ตาย ตรงกับเป้าหมายของเควสหรือไม่
+                if (q.TargetEnemyId == killedEnemyId)
+                {
+                    q.CurrentKillCount++;
+
+                    // ป้องกันไม่ให้ Count เกินค่าเป้าหมาย (กันบั๊ก UI แสดงผล 11/10)
+                    if (q.CurrentKillCount > q.RequiredKillCount)
+                        q.CurrentKillCount = q.RequiredKillCount;
+
+                    Debug.Log($"Quest '{q.QuestName}' Progress: {q.CurrentKillCount} / {q.RequiredKillCount}");
+                }
+            }
+        }
+    }
+
     public Quest CheckForQuest(Npc npc, QuestStatus status)
     {
         curNpc = npc;
@@ -72,6 +109,9 @@ public class QuestManager : MonoBehaviour
             case QuestType.Delivery:
                 success = CheckItemToDelivery();
                 break;
+            case QuestType.KillCount: // [NEW] เพิ่มการเช็คเควส KillCount
+                success = CheckKillCountTarget();
+                break;
         }
         return success;
     }
@@ -80,6 +120,13 @@ public class QuestManager : MonoBehaviour
     {
         if (curQuest == null) return false;
         return InventoryManager.instance.CheckPartyForItem(curQuest.QuestItemId);
+    }
+
+    private bool CheckKillCountTarget()
+    {
+        if (curQuest == null) return false;
+        // เช็คว่าจำนวนที่ฆ่าได้ เท่ากับหรือมากกว่าที่ต้องการหรือยัง
+        return curQuest.CurrentKillCount >= curQuest.RequiredKillCount;
     }
     #endregion
 
@@ -122,12 +169,16 @@ public class QuestManager : MonoBehaviour
     public bool DeliverItem()
     {
         if (curQuest == null) return false;
-        return InventoryManager.instance.RemoveItemFromParty(curQuest.QuestItemId);
+
+        // เพิ่มการตรวจสอบประเภทเควส เพื่อให้ส่งของแค่เฉพาะเวลาเป็นเควส Delivery
+        if (curQuest.Type == QuestType.Delivery)
+        {
+            return InventoryManager.instance.RemoveItemFromParty(curQuest.QuestItemId);
+        }
+
+        return true; // ถ้าไม่ใช่เควสส่งของ ถือว่าผ่านไปได้เลย (เพราะเช็ค Count มาก่อนหน้าแล้ว)
     }
 
-    /// <summary>
-    /// มอบรางวัลไอเทมและ EXP หลังจบเควส
-    /// </summary>
     public bool NpcGiveReward(out Item rewardItem, out int rewardEXP)
     {
         rewardItem = null;
@@ -139,7 +190,6 @@ public class QuestManager : MonoBehaviour
         Character hero = PartyManager.instance.SelectChars[0];
         Item item = new Item(InventoryManager.instance.ItemData[curQuest.RewardItemId]);
 
-        // [แก้ไข] จำกัดการให้รางวัลเฉพาะในพื้นที่กระเป๋า 16 ช่องเท่านั้น
         for (int i = 0; i < InventoryManager.INVENTORY_CAPACITY; i++)
         {
             if (hero.InventoryItems[i] == null)
@@ -150,7 +200,6 @@ public class QuestManager : MonoBehaviour
                 rewardItem = item;
                 rewardEXP = curQuest.RewardExp;
 
-                // แจก EXP เข้าปาร์ตี้อัตโนมัติ
                 PartyManager.instance.DistributeTotalExp(rewardEXP);
 
                 return true;

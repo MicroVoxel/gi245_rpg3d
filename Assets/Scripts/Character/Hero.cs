@@ -2,6 +2,7 @@
 
 /// <summary>
 /// Hero: ตัวละครที่ผู้เล่นควบคุม มี Progression (EXP/Level) และ Attributes
+/// พร้อมระบบคัดกรองขอบเขตช่องเก็บของป้องกันไอเทมไหลเข้าสวมใส่ (Boundary Guard)
 /// </summary>
 public class Hero : Character
 {
@@ -39,6 +40,12 @@ public class Hero : Character
     public int Intelligence { get { return intelligence; } set { intelligence = value; } }
     public int Wisdom { get { return wisdom; } set { wisdom = value; } }
     public int Charisma { get { return charisma; } set { charisma = value; } }
+    #endregion
+
+    #region === HERO SOUND EFFECTS ===
+    [Header("Hero Specific SFX")]
+    [Tooltip("ใส่ Index ของเสียงตอนเลเวลอัป")]
+    [SerializeField] private int levelUpSfxIndex = -1;
     #endregion
 
     #region === UNITY CALLBACKS ===
@@ -108,14 +115,16 @@ public class Hero : Character
 
     #region === INVENTORY ===
     /// <summary>
-    /// บันทึกไอเทมเข้ากระเป๋า
-    /// [FIX] วนลูปถึง INVENTORY_CAPACITY (16) เท่านั้น
-    /// ป้องกันไอเทมที่ซื้อมาถูกยัดเข้าช่อง SHIELD_SLOT (16) หรือ WEAPON_SLOT (17) โดยไม่ได้ตั้งใจ
+    /// บันทึกไอเทมเข้ากระเป๋าจากการซื้อขายหรือสปอว์น 
+    /// [CRITICAL FIX]: บังคับตรวจเช็คจำกัดวงที่ INVENTORY_CAPACITY (16 ช่องแรก) เท่านั้น 
+    /// และเพิ่มเงื่อนไขป้องกันการแสกนทะลุเกินความยาวจริงของอาเรย์อย่างสมบูรณ์แบบ
     /// </summary>
     public void SaveItemInInventory(Item item)
     {
         for (int i = 0; i < InventoryManager.INVENTORY_CAPACITY; i++)
         {
+            if (i >= InventoryItems.Length) break;
+
             if (InventoryItems[i] == null)
             {
                 InventoryItems[i] = item;
@@ -127,9 +136,6 @@ public class Hero : Character
     #endregion
 
     #region === EXP & LEVEL ===
-    /// <summary>
-    /// รับ EXP และเช็ค Level Up (ใช้ while เพื่อรองรับการข้ามหลาย Level)
-    /// </summary>
     public void ReceiveExp(int amount)
     {
         if (level >= MAX_LEVEL) return;
@@ -138,12 +144,11 @@ public class Hero : Character
         CheckLevelUp();
     }
 
-    /// <summary>
-    /// เช็ค Level Up ด้วย while loop เพื่อป้องกันการข้าม Level
-    /// </summary>
     private void CheckLevelUp()
     {
         nextExp = level * 30;
+
+        bool hasLeveledUp = false;
 
         while (exp >= nextExp && level < MAX_LEVEL)
         {
@@ -151,18 +156,20 @@ public class Hero : Character
             nextExp = level * 30;
             UpdateStats();
             OnLevelUp(level);
+            hasLeveledUp = true;
         }
 
-        // ถ้าอัปเลเวลจนถึง MAX_LEVEL แล้วให้ล็อคค่า EXP ไม่ให้เกินหลอด
+        if (hasLeveledUp)
+        {
+            PlayCharacterSFX(levelUpSfxIndex);
+        }
+
         if (level >= MAX_LEVEL)
         {
             exp = nextExp;
         }
     }
 
-    /// <summary>
-    /// Event ที่เกิดขึ้นเมื่อ Level Up เช่น เรียนสกิลใหม่
-    /// </summary>
     private void OnLevelUp(int newLevel)
     {
         Magic magic;
@@ -189,9 +196,6 @@ public class Hero : Character
     #endregion
 
     #region === STAT CALCULATION ===
-    /// <summary>
-    /// อัปเดต Stat เมื่อ Level Up โดยแยก Base Defense ออกจากอุปกรณ์
-    /// </summary>
     private void UpdateStats()
     {
         attackDamage++;

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5442804de335ccc44a024a2a657251dd, type: 3}
+  m_Name: 007_MagicExplosion
+  m_EditorClassIdentifier: Assembly-CSharp::MagicData
+  id: 7
+  magicName: MagicExplosion
+  icon: {fileID: 21300000, guid: 5b78b15c3c7debf41a01ac624e815517, type: 3}
+  type: 1
+  range: 8
+  power: 50
+  loadTime: 3
+  shootTime: 1.5
+  loadId: 0
+  shootId: 8
+  duration: 0
