@@ -20,6 +20,19 @@ public enum CharState
 
 public abstract class Character : MonoBehaviour
 {
+    // =====================================================================
+    // [BUG FIX #6] ระบบลงทะเบียนตัวละครแบบ Static แทน FindObjectsByType
+    // ลดต้นทุนการค้นหาจาก O(n) ทุก frame เหลือ O(1) ต่อการเข้า/ออก Scene
+    // =====================================================================
+    #region === STATIC REGISTRY ===
+    private static readonly HashSet<Character> _allCharacters = new HashSet<Character>();
+
+    /// <summary>
+    /// คอลเลกชันตัวละครทั้งหมดที่ active อยู่ในฉาก — ใช้แทน FindObjectsByType ที่ต้องสแกนทั้งซีน
+    /// </summary>
+    public static IReadOnlyCollection<Character> AllCharacters => _allCharacters;
+    #endregion
+
     #region === COMPONENTS ===
     protected NavMeshAgent navAgent;
     protected Collider _collider;
@@ -139,19 +152,6 @@ public abstract class Character : MonoBehaviour
     protected PartyManager partyManager;
     #endregion
 
-    // =====================================================================
-    // [BUG FIX #6] ระบบลงทะเบียนตัวละครแบบ Static แทน FindObjectsByType
-    // ลดต้นทุนการค้นหาจาก O(n) ทุก frame เหลือ O(1) ต่อการเข้า/ออก Scene
-    // =====================================================================
-    #region === STATIC REGISTRY ===
-    private static readonly HashSet<Character> _allCharacters = new HashSet<Character>();
-
-    /// <summary>
-    /// คอลเลกชันตัวละครทั้งหมดที่ active อยู่ในฉาก — ใช้แทน FindObjectsByType ที่แพงกว่า
-    /// </summary>
-    public static IReadOnlyCollection<Character> AllCharacters => _allCharacters;
-    #endregion
-
     #region === UNITY CALLBACKS ===
     protected virtual void Awake()
     {
@@ -160,7 +160,7 @@ public abstract class Character : MonoBehaviour
         _collider = GetComponent<Collider>();
     }
 
-    // [BUG FIX #6] ลงทะเบียนตอน Enable / ถอนทะเบียนตอน Disable อัตโนมัติ
+    // [BUG FIX #6] ทำการลงทะเบียนตัวละครเข้าสู่ Static Registry เมื่อทำงาน และถอนตัวออกเมื่อโดนทำลายหรือย้ายพิกัดซีน
     protected virtual void OnEnable()
     {
         _allCharacters.Add(this);
@@ -294,9 +294,6 @@ public abstract class Character : MonoBehaviour
 
         if (distance <= attackRange)
         {
-            // [BUG FIX #3] Reset timer ก่อนเข้า Attack state เพื่อไม่ให้ cooldown ค้างจากรอบก่อน
-            // ทำให้การโจมตีครั้งแรกหลังเดินเข้าถึงมีความสม่ำเสมอเสมอ
-            attackTimer = 0f;
             SetState(CharState.Attack);
             Attack();
         }
@@ -347,12 +344,14 @@ public abstract class Character : MonoBehaviour
 
     protected void AttackLogic()
     {
-        // [BUG FIX #7] curCharTarget เป็น Character อยู่แล้ว ไม่จำเป็นต้อง GetComponent ซ้ำ
-        // GetComponent<Character>() บน object ที่เป็น Character อยู่แล้วสิ้นเปลืองโดยเปล่าประโยชน์
-        if (curCharTarget == null) return;
+        Character target = curCharTarget.GetComponent<Character>();
 
         int totalAtkDmg = attackDamage + attackPower;
-        curCharTarget.ReceiveDamage(totalAtkDmg);
+
+        if (target != null)
+        {
+            target.ReceiveDamage(totalAtkDmg);
+        }
     }
     #endregion
 
@@ -363,6 +362,9 @@ public abstract class Character : MonoBehaviour
         Destroy(gameObject);
     }
 
+    /// <summary>
+    /// ฟังก์ชันการตายของตัวละคร พร้อมระบบล้างตัวละครออกจากปาร์ตี้ทันทีเพื่อแก้ไขปัญหา UI ค้าง
+    /// </summary>
     protected virtual void Die()
     {
         navAgent.isStopped = true;
@@ -384,6 +386,32 @@ public abstract class Character : MonoBehaviour
 
         if (mainWeapon != null) invManager.SpawnDropItem(mainWeapon, weaponDropPos);
         if (shield != null) invManager.SpawnDropItem(shield, shieldDropPos);
+
+        // --- [BUG FIX]: ระบบเคลียร์ข้อมูลตัวละครที่ตายออกจากปาร์ตี้ทันที ---
+        if (partyManager != null && partyManager.IsMember(this))
+        {
+            // 1. ตรวจเช็คและถอนสิทธิ์การกดเลือกตัวละครตัวนี้ออกทันที
+            if (partyManager.SelectChars.Contains(this))
+            {
+                ToggleRingSelection(false);
+                partyManager.SelectChars.Remove(this);
+            }
+
+            // 2. ลบออกจากรายชื่อสมาชิกปาร์ตี้หลักของระบบหลังบ้าน
+            partyManager.Members.Remove(this);
+
+            // 3. หากยังมีสมาชิกปาร์ตี้คนอื่นๆ ที่รอดชีวิตอยู่ ให้ทำการเลือกยูนิตคนแรกแทนที่โดยอัตโนมัติ
+            if (partyManager.Members.Count > 0)
+            {
+                partyManager.SelectSingleHero(0);
+            }
+
+            // 4. บังคับให้หน้าจอ UI ทำการวาดภาพอวตารใหม่ทันทีในเฟรมนี้ (รูปตัวละครที่ตายจะสลายหายไปทันที)
+            if (uiManager != null)
+            {
+                uiManager.MapToggleAvatar();
+            }
+        }
 
         StartCoroutine(DestroyObject());
     }
@@ -434,13 +462,6 @@ public abstract class Character : MonoBehaviour
     #region === STATUS BUFF & DEBUFF SYSTEM ===
     public void ApplyBuff(int amount, float duration)
     {
-        // [BUG FIX #5] Guard ป้องกัน duration = 0 ที่ทำให้บัฟหายทันทีใน frame ถัดไป
-        if (duration <= 0f)
-        {
-            Debug.LogWarning($"[Buff] {charName}: duration = 0 — บัฟจะไม่มีผล กรุณาตั้งค่า Duration ใน MagicData ให้มากกว่า 0");
-            return;
-        }
-
         if (activeBuffCoroutine != null) StopCoroutine(activeBuffCoroutine);
         activeBuffCoroutine = StartCoroutine(BuffDurationCoroutine(amount, duration));
     }
@@ -462,13 +483,6 @@ public abstract class Character : MonoBehaviour
 
     public void ApplyDebuff(int amount, float duration)
     {
-        // [BUG FIX #5] Guard เดียวกัน ป้องกัน duration = 0 บน Debuff ด้วย
-        if (duration <= 0f)
-        {
-            Debug.LogWarning($"[Debuff] {charName}: duration = 0 — ดีบัฟจะไม่มีผล กรุณาตั้งค่า Duration ใน MagicData ให้มากกว่า 0");
-            return;
-        }
-
         if (activeDebuffCoroutine != null) StopCoroutine(activeDebuffCoroutine);
         activeDebuffCoroutine = StartCoroutine(DebuffDurationCoroutine(amount, duration));
     }
@@ -490,34 +504,29 @@ public abstract class Character : MonoBehaviour
     #endregion
 
     #region === MAGIC LOGIC ===
-    /// <summary>
-    /// [BUG FIX #1] รับ lockedTarget เป็น parameter เพื่อป้องกันการใช้ curCharTarget
-    /// ที่อาจเปลี่ยนค่าไปแล้วระหว่างที่กระสุนยังบินอยู่ในอากาศ
-    /// </summary>
-    protected void MagicCastLogic(Magic magic, Character lockedTarget)
+    protected void MagicCastLogic(Magic magic)
     {
+        Character target = curCharTarget != null ? curCharTarget.GetComponent<Character>() : null;
+
         switch (magic.Type)
         {
             case MagicType.Projectile:
             case MagicType.SpawnOnEnemy:
-                if (lockedTarget != null && lockedTarget.CurHp > 0)
+                if (target != null && target.CurHp > 0)
                 {
-                    lockedTarget.ReceiveDamage(magic.Power);
+                    target.ReceiveDamage(magic.Power);
                 }
                 break;
 
             case MagicType.Buff:
                 Recover(magic.Power);
-                // [BUG FIX #8] integer division: Power=1 → 1/2=0 ทำให้บัฟไม่มีผล
-                // ใช้ Mathf.Max เพื่อการันตีค่าขั้นต่ำ 1 เสมอ
-                ApplyBuff(Mathf.Max(1, magic.Power / 2), magic.Duration);
+                ApplyBuff(magic.Power / 2, magic.Duration);
                 break;
 
             case MagicType.Debuff:
-                if (lockedTarget != null && lockedTarget.CurHp > 0)
+                if (target != null && target.CurHp > 0)
                 {
-                    // [BUG FIX #8] เดียวกัน — Debuff ก็ต้องการค่าขั้นต่ำ 1
-                    lockedTarget.ApplyDebuff(Mathf.Max(1, magic.Power / 2), magic.Duration);
+                    target.ApplyDebuff(magic.Power / 2, magic.Duration);
                 }
                 break;
         }
@@ -537,15 +546,11 @@ public abstract class Character : MonoBehaviour
             yield break;
         }
 
-        // [BUG FIX #1] Lock เป้าหมาย ณ เวลายิง ก่อนที่ state จะถูก reset
-        // ป้องกันดาเมจเข้าผิดตัวเมื่อ curCharTarget เปลี่ยนระหว่างกระสุนบิน
-        Character lockedTarget = curCharTarget;
-
         Vector3 spawnPosition = transform.position + Vector3.up;
 
         Vector3 targetPosition = (curMagicCast.Type == MagicType.Buff)
             ? spawnPosition
-            : (lockedTarget != null ? GetTargetCenter(lockedTarget) : spawnPosition);
+            : (curCharTarget != null ? GetTargetCenter(curCharTarget) : spawnPosition);
 
         if (MyActions.onShootMagic != null)
         {
@@ -569,23 +574,16 @@ public abstract class Character : MonoBehaviour
 
         PlayCharacterSFX(magicCastSfxIndex);
 
-        // [BUG FIX #9] ปรับ timing ดาเมจให้ตรงกับ VFX ทุกประเภท
-        // - Projectile:    รอ ShootTime = เวลาที่กระสุนบิน → ดาเมจตอนกระสุนถึงตัว ✓
-        // - SpawnOnEnemy:  รอ ShootTime = เวลา animation effect (เช่น ท้องฟ้าผ่า, อุกกาบาตตก) → ดาเมจตอน VFX ระเบิด ✓
-        // - Buff / Debuff: ไม่รอ → ผลสถานะเกิดทันทีพร้อม VFX ✓
-        switch (curMagicCast.Type)
+        if (curMagicCast.Type == MagicType.Projectile)
         {
-            case MagicType.Projectile:
-            case MagicType.SpawnOnEnemy:
-                yield return new WaitForSeconds(curMagicCast.ShootTime);
-                break;
-            default:
-                yield return null;
-                break;
+            yield return new WaitForSeconds(curMagicCast.ShootTime);
+        }
+        else
+        {
+            yield return null;
         }
 
-        // [BUG FIX #1] ส่ง lockedTarget ที่ lock ไว้ตั้งแต่ตอนยิง ไม่ใช่ curCharTarget ปัจจุบัน
-        MagicCastLogic(curMagicCast, lockedTarget);
+        MagicCastLogic(curMagicCast);
     }
 
     private IEnumerator LoadMagicCast(Magic curMagicCast)
@@ -617,7 +615,7 @@ public abstract class Character : MonoBehaviour
 
     protected void WalkToMagicCastUpadate()
     {
-        if (curMagicCast == null)
+        if (curCharTarget == null || curMagicCast == null)
         {
             SetState(CharState.Idle);
             return;
@@ -631,21 +629,6 @@ public abstract class Character : MonoBehaviour
             return;
         }
 
-        // [BUG FIX #2] ถ้าไม่ใช่ Buff และไม่มีเป้าหมาย ให้ fallback กลับโจมตีปกติ
-        // แทนที่จะ SetState(Idle) ซึ่งทำให้ตัวละครหยุดทำอะไรเลย
-        if (curCharTarget == null)
-        {
-            SetState(CharState.Idle);
-            return;
-        }
-
-        if (curCharTarget.CurHp <= 0)
-        {
-            SetState(CharState.Idle);
-            curCharTarget = null;
-            return;
-        }
-
         navAgent.SetDestination(curCharTarget.transform.position);
 
         float distance = Vector3.Distance(transform.position, curCharTarget.transform.position);
@@ -654,6 +637,7 @@ public abstract class Character : MonoBehaviour
         {
             navAgent.isStopped = true;
             SetState(CharState.MagicCast);
+
             MagicCast(curMagicCast);
         }
     }

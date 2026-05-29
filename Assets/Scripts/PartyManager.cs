@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// จัดการสมาชิก Party ทั้งหมด: การเลือก, EXP, Save/Load, Formation
+/// พร้อมระบบกวาดล้างข้อมูลตกค้างสะสมจากการสลับซีน (Scene Transition Leak Prevention)
 /// </summary>
 public class PartyManager : MonoBehaviour
 {
@@ -241,12 +243,7 @@ public class PartyManager : MonoBehaviour
                 heroData[i].curHp = hero.CurHp;
                 heroData[i].maxHP = hero.MaxHP;
 
-                // =====================================================================
-                // [BUG FIX] Magic Skills — เดิมใช้ if (j < heroData[i].magicIds.Count)
-                // ซึ่งไม่ทำงานเลยเพราะ magicIds เริ่มต้นเป็น List ว่าง (Count=0)
-                // ทำให้เงื่อนไขเป็น false ตลอด → ไม่มี magic ถูก save
-                // แก้: Clear แล้ว Add ใหม่ทั้งหมด
-                // =====================================================================
+                // บันทึกรายการ Magic แบบเคลียร์สิทธิ์ซ้ำ
                 heroData[i].magicIds.Clear();
                 foreach (Magic magic in hero.MagicSkills)
                 {
@@ -282,10 +279,24 @@ public class PartyManager : MonoBehaviour
     }
 
     /// <summary>
-    /// โหลดข้อมูล Hero จาก HeroData Array
+    /// โหลดข้อมูล Hero จาก HeroData Array พร้อมล้างข้อมูลผีดิบสะสมป้องกันหน่วยความจำบวม
     /// </summary>
     public void LoadAllHeroData()
     {
+        // =====================================================================
+        // [CRITICAL FIX]: ป้องกันปัญหาแอนิเมเตอร์บวมน้ำสะสมเมื่อผู้เล่นเดินสลับแมพไปมา
+        // สั่งแสกนกวาดล้างโมเดลฮีโร่ตัวเก่าในซีนก่อนหน้าทิ้ง และล้างค่า Reference ทั้งหมดในลิสต์ออกให้เกลี้ยงก่อนเริ่มโหลดชุดใหม่
+        // =====================================================================
+        foreach (Character oldHero in members)
+        {
+            if (oldHero != null && oldHero.gameObject != null)
+            {
+                Destroy(oldHero.gameObject);
+            }
+        }
+        members.Clear();
+        selectChars.Clear();
+
         if (MapManager.instance == null || GameManager.instance == null) return;
 
         int enterId = Settings.enterPointId;
@@ -294,6 +305,7 @@ public class PartyManager : MonoBehaviour
         for (int i = 0; i < Settings.partyCount; i++)
         {
             if (i >= heroData.Length || heroData[i] == null) continue;
+            if (heroData[i].prefabId < 0 || heroData[i].prefabId >= GameManager.instance.HeroPrefabs.Length) continue;
 
             GameObject heroObj = Instantiate(
                 GameManager.instance.HeroPrefabs[heroData[i].prefabId],
@@ -321,22 +333,13 @@ public class PartyManager : MonoBehaviour
             hero.Wisdom = heroData[i].wisdom;
             hero.Charisma = heroData[i].charisma;
 
-            // =====================================================================
-            // [BUG FIX] Magic Skills Load
-            // เดิม: Clear magicSkills แล้วโหลดจาก magicIds ที่ว่าง → magic หายหมด
-            // แก้:  Clear แล้วโหลด ถูกต้องแต่ต้องมีข้อมูล save ที่ถูกต้องก่อน (fix ฝั่ง Save ด้วย)
-            //
-            // [BUG FIX 2] ค้นหา MagicData ด้วย id field แทนการใช้ index โดยตรง
-            // เดิม: MagicDatas[magicId] → อาจเข้าถึง element ผิดถ้า id ไม่ตรงกับ index
-            // แก้:  หา MagicData ที่มี .id == magicId เพื่อความถูกต้อง
-            // =====================================================================
+            // Magic Skills Load แบบสแกนหาแมตช์ ID คอนเฟิร์มความถูกต้อง
             hero.MagicSkills.Clear();
 
-            if (VFXManager.instance != null)
+            if (VFXManager.instance != null && VFXManager.instance.MagicDatas != null)
             {
                 foreach (int magicId in heroData[i].magicIds)
                 {
-                    // ค้นหา MagicData ด้วย id field ไม่ใช่ array index
                     MagicData foundData = System.Array.Find(
                         VFXManager.instance.MagicDatas,
                         d => d != null && d.id == magicId
@@ -348,7 +351,7 @@ public class PartyManager : MonoBehaviour
                     }
                     else
                     {
-                        Debug.LogWarning($"[PartyManager] LoadAllHeroData: ไม่พบ MagicData ที่มี id={magicId} — ข้ามสกิลนี้ไป");
+                        Debug.LogWarning($"[PartyManager] LoadAllHeroData: ไม่พบ MagicData ที่มี id={magicId} ในฐานข้อมูลฐานเวท");
                     }
                 }
             }
